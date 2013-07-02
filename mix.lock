@@ -1,0 +1,7 @@
+[ "cauldron": {:git,"git://github.com/meh/cauldron.git","30441d8d9651507364158c8ae406e9c1be4499b7",[]},
+  "datastructures": {:git,"git://github.com/meh/elixir-datastructures.git","5a9a8273f85f7773f3a700a95e02c50d021f84fd",[]},
+  "finalizer": {:git,"git://github.com/meh/elixir-finalizer.git","6761c571949bf48697e3fcfbef1bed4df04819b0",[]},
+  "jsex": {:git,"git://github.com/talentdeficit/jsex.git","816d2f2e94638b4f5a05a0ac4ad3afdac75feb15",[]},
+  "jsx": {:git,"git://github.com/talentdeficit/jsx.git","352d6b21cbec4fe1b66bc7ce3ded67a3b32add2c",[tag: "v1.4.2"]},
+  "resource": {:git,"git://github.com/tonyrog/resource.git","37264ec960263cec0df8d6db0da818297b8d5771",[]},
+  "socket": {:git,"git://github.com/meh/elixir-socket.git","dafcc768ffd1dbcb5dbf705549996b7d6764fc01",[]} ]

@@ -33,7 +33,7 @@ defmodule Urna do
   defmacro __before_compile__(env) do
     methods = Keyword.values(@verbs)
 
-    quote location: :keep do
+    quote do
       def handle(method, _, req) when not method in unquote(methods) do
         req.reply(405)
       end
@@ -45,7 +45,7 @@ defmodule Urna do
   end
 
   defmacro namespace(name, do: body) do
-    quote location: :keep do
+    quote do
       if @resource do
         raise ArgumentError, message: "cannot nest a namespace in a resource"
       end
@@ -59,7 +59,7 @@ defmodule Urna do
   end
 
   defmacro resource(name, do: body) do
-    quote location: :keep do
+    quote do
       @resource true
       @endpoint Stack.push(@endpoint, to_binary(unquote(name)))
 
@@ -129,6 +129,13 @@ defmodule Urna do
   defmacro body_to_response(body) do
     quote do
       content = req.body
+      decoded = case JSEX.decode(content) do
+        { :ok, result } ->
+          result
+
+        _ ->
+          nil
+      end
 
       case unquote(body) do
         { code } ->
@@ -144,9 +151,7 @@ defmodule Urna do
   end
 
   defmacro params do
-    quote do
-      JSEX.decode!(content)
-    end
+    quote do: decoded
   end
 
   defmacro fail(code) do

@@ -129,23 +129,32 @@ defmodule Urna do
   defmacro body_to_response(body) do
     quote do
       content = req.body
-      decoded = case JSEX.decode(content) do
-        { :ok, result } ->
-          result
+      decoded = case req.headers["Content-Type"] || "application/json" do
+        "application/json" ->
+          JSEX.decode(content || "null")
+
+        "application/x-www-form-urlencoded" ->
+          { :ok, URI.decode_query(content || "") }
 
         _ ->
-          nil
+          { :error, nil }
       end
 
-      case unquote(body) do
-        { code } ->
-          req.reply(code)
+      case decoded do
+        { :ok, decoded } ->
+          case unquote(body) do
+            { code } ->
+              req.reply(code)
 
-        { code, text } ->
-          req.reply({ code, text })
+            { code, text } ->
+              req.reply({ code, text })
 
-        result ->
-          req.reply(200, JSEX.encode!(result))
+            result ->
+              req.reply(200, [{ "Content-Type", "application/json" }], JSEX.encode!(result))
+          end
+
+        { :error, _ } ->
+          req.reply(406)
       end
     end
   end

@@ -177,13 +177,25 @@ defmodule Urna do
     quote do: __uri__
   end
 
-  defmacro fail(code) do
+  defmacro success(code) when code in 100 .. 399 do
     quote do
       { unquote(code) }
     end
   end
 
-  defmacro fail(code, text) do
+  defmacro success(code, text) when code in 100 .. 399 do
+    quote do
+      { unquote(code), unquote(text) }
+    end
+  end
+
+  defmacro fail(code) when code in 400 .. 599 do
+    quote do
+      { unquote(code) }
+    end
+  end
+
+  defmacro fail(code, text) when code in 400 .. 599 do
     quote do
       { unquote(code), unquote(text) }
     end

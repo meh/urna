@@ -159,6 +159,10 @@ defmodule Urna do
     end
   end
 
+  defmacro headers do
+    quote do: req.headers
+  end
+
   defmacro params do
     quote do: decoded
   end

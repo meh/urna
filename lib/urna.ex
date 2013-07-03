@@ -94,7 +94,7 @@ defmodule Urna do
         body = unquote(body)
 
         def :handle, [ unquote(method),
-                       quote(do: URI.Info[path: unquote(path)]),
+                       quote(do: URI.Info[path: unquote(path)] = uri),
                        quote(do: req) ], [], do: (quote do
           body_to_response unquote(body)
         end)
@@ -112,7 +112,7 @@ defmodule Urna do
         body = unquote(body)
 
         def :handle, [ unquote(method),
-                       quote(do: URI.Info[path: unquote(path) <> "/" <> unquote(name)]),
+                       quote(do: URI.Info[path: unquote(path) <> "/" <> unquote(name)] = uri),
                        quote(do: req) ], [], do: (quote do
           body_to_response unquote(body)
         end)
@@ -145,7 +145,9 @@ defmodule Urna do
       end
 
       case decoded do
-        { :ok, decoded } ->
+        { :ok, __params__ } ->
+          __uri__ = uri
+
           case unquote(body) do
             { code } ->
               req.reply(code)
@@ -168,7 +170,11 @@ defmodule Urna do
   end
 
   defmacro params do
-    quote do: decoded
+    quote do: __params__
+  end
+
+  defmacro uri do
+    quote do: __uri__
   end
 
   defmacro fail(code) do

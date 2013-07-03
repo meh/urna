@@ -135,7 +135,7 @@ defmodule Urna do
             JSEX.decode(content)
 
           "application/x-www-form-urlencoded" ->
-            { :ok, URI.decode_query(content) }
+            { :ok, URI.decode_query(content, []) }
 
           _ ->
             { :error, :unsupported_content_type }

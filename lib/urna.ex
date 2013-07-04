@@ -152,8 +152,14 @@ defmodule Urna do
             { code } ->
               req.reply(code)
 
-            { code, text } ->
+            { code, text } when is_binary(text) ->
               req.reply({ code, text })
+
+            { code, headers } ->
+              req.reply.status(code).headers(headers).body("")
+
+            { code, text, headers } ->
+              req.reply.status({ code, text }).headers(headers).body("")
 
             result ->
               req.reply(200, [{ "Content-Type", "application/json" }], JSEX.encode!(result))
@@ -183,9 +189,15 @@ defmodule Urna do
     end
   end
 
-  defmacro success(code, text) when code in 100 .. 399 do
+  defmacro success(code, text_or_headers) when code in 100 .. 399 do
     quote do
-      { unquote(code), unquote(text) }
+      { unquote(code), unquote(text_or_headers) }
+    end
+  end
+
+  defmacro success(code, text, headers) when code in 100 .. 399 do
+    quote do
+      { unquote(code), unquote(text), unquote(headers) }
     end
   end
 
@@ -195,9 +207,15 @@ defmodule Urna do
     end
   end
 
-  defmacro fail(code, text) when code in 400 .. 599 do
+  defmacro fail(code, text_or_headers) when code in 400 .. 599 do
     quote do
-      { unquote(code), unquote(text) }
+      { unquote(code), unquote(text_or_headers) }
+    end
+  end
+
+  defmacro fail(code, text, headers) when code in 400 .. 599 do
+    quote do
+      { unquote(code), unquote(text), unquote(headers) }
     end
   end
 end

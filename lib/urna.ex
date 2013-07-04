@@ -218,4 +218,10 @@ defmodule Urna do
       { unquote(code), unquote(text), unquote(headers) }
     end
   end
+
+  defmacro redirect(uri) do
+    quote do
+      { 301, [{ "Location", to_binary(unquote(uri)) }] }
+    end
+  end
 end

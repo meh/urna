@@ -183,6 +183,10 @@ defmodule Urna do
     quote do: __uri__
   end
 
+  defmacro query do
+    quote do: URI.decode_query(__uri__.query)
+  end
+
   defmacro success(code) when code in 100 .. 399 do
     quote do
       { unquote(code) }

@@ -93,11 +93,15 @@ defmodule Urna do
         path = endpoint_to_path(@endpoint)
         body = unquote(body)
 
-        def :handle, [ unquote(method),
-                       quote(do: URI.Info[path: unquote(path)] = uri),
-                       quote(do: req) ], [], do: (quote do
-          body_to_response unquote(body)
-        end)
+        if @resource do
+          def :handle, [ unquote(method),
+                         quote(do: URI.Info[path: unquote(path)] = uri),
+                         quote(do: req) ], [], do: (quote do
+            body_to_response unquote(body)
+          end)
+        else
+          raise ArgumentError, message: "cannot define standalone verb outside a resource"
+        end
       end
     end
 
@@ -111,11 +115,20 @@ defmodule Urna do
         name = unquote(name)
         body = unquote(body)
 
-        def :handle, [ unquote(method),
-                       quote(do: URI.Info[path: unquote(path) <> "/" <> unquote(name)] = uri),
-                       quote(do: req) ], [], do: (quote do
-          body_to_response unquote(body)
-        end)
+        if @resource do
+          def :handle, [ unquote(method),
+                         quote(do: URI.Info[path: unquote(path) <> "/" <> unquote(name)] = uri),
+                         quote(do: req) ], [], do: (quote do
+            body_to_response unquote(body)
+          end)
+        else
+          def :handle, [ unquote(method),
+                         quote(do: URI.Info[path: unquote(path) <> "/" <> unquote(to_binary(name))] = uri),
+                         quote(do: req) ], [], do: (quote do
+            body_to_response unquote(body)
+          end)
+
+        end
       end
     end
   end

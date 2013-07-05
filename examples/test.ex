@@ -7,6 +7,10 @@ defmodule Test do
         params["id"]
       end
 
+      get do
+        to_binary(uri)
+      end
+
       get id do
         if id != "42" do
           fail 406
@@ -18,6 +22,12 @@ defmodule Test do
       put id do
         params["name"]
       end
+    end
+  end
+
+  namespace :bar do
+    get :baz do
+      "lol"
     end
   end
 end

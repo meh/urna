@@ -145,7 +145,7 @@ defmodule Urna do
       decoded = if content do
         case req.headers["Content-Type"] || "application/json" do
           "application/json" ->
-            JSEX.decode(content)
+            JSON.decode!(content)
 
           "application/x-www-form-urlencoded" ->
             { :ok, URI.decode_query(content, []) }
@@ -175,7 +175,7 @@ defmodule Urna do
               req.reply.status({ code, text }).headers(headers).body("")
 
             result ->
-              req.reply(200, [{ "Content-Type", "application/json" }], JSEX.encode!(result))
+              req.reply(200, [{ "Content-Type", "application/json" }], JSON.encode!(result))
           end
 
         { :error, _ } ->

@@ -1,7 +1,6 @@
-[ "cauldron": {:git,"git://github.com/meh/cauldron.git","02ff7faedc4305ce6668b68460a6c24f6601a2e5",[]},
-  "datastructures": {:git,"git://github.com/meh/elixir-datastructures.git","5a9a8273f85f7773f3a700a95e02c50d021f84fd",[]},
-  "finalizer": {:git,"git://github.com/meh/elixir-finalizer.git","6761c571949bf48697e3fcfbef1bed4df04819b0",[]},
-  "jsex": {:git,"git://github.com/talentdeficit/jsex.git","816d2f2e94638b4f5a05a0ac4ad3afdac75feb15",[]},
-  "jsx": {:git,"git://github.com/talentdeficit/jsx.git","352d6b21cbec4fe1b66bc7ce3ded67a3b32add2c",[tag: "v1.4.2"]},
-  "resource": {:git,"git://github.com/tonyrog/resource.git","37264ec960263cec0df8d6db0da818297b8d5771",[]},
-  "socket": {:git,"git://github.com/meh/elixir-socket.git","c92000bbb7148066bb06e171993f319a053923ab",[]} ]
+[ "cauldron": {:git, "git://github.com/meh/cauldron.git", "5b405bf99cdbc1234afcda5f49268d8f5127494f", []},
+  "datastructures": {:git, "git://github.com/meh/elixir-datastructures.git", "930186828cd4ff7a1f3a4eef4f6212717f314ce0", []},
+  "finalizer": {:git, "git://github.com/meh/elixir-finalizer.git", "9c38d9145824a46c66f1a010e137a953a6c78e04", []},
+  "jazz": {:git, "git://github.com/meh/jazz.git", "f5c1375369195a387b74eed3ac088114c8ffc5a9", []},
+  "resource": {:git, "git://github.com/tonyrog/resource.git", "37264ec960263cec0df8d6db0da818297b8d5771", []},
+  "socket": {:git, "git://github.com/meh/elixir-socket.git", "3b29e95e63a2f81d80814975fd3f816813444a18", []} ]

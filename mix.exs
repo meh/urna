@@ -17,6 +17,6 @@ defmodule Urna.Mixfile do
   # { :foobar, "0.1", git: "https://github.com/elixir-lang/foobar.git" }
   defp deps do
     [ { :cauldron, github: "meh/cauldron" },
-      { :jsex, github: "talentdeficit/jsex" } ]
+      { :jazz, github: "meh/jazz" } ]
   end
 end

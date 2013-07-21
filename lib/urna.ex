@@ -162,16 +162,16 @@ defmodule Urna do
           __uri__ = uri
 
           case unquote(body) do
-            { code } ->
+            { code } when is_integer(code) ->
               req.reply(code)
 
-            { code, text } when is_binary(text) ->
+            { code, text } when is_integer(code) and is_binary(text) ->
               req.reply({ code, text })
 
-            { code, headers } ->
+            { code, headers } when is_integer(code) ->
               req.reply.status(code).headers(headers).body("")
 
-            { code, text, headers } ->
+            { code, text, headers } when is_integer(code) and is_binary(text) ->
               req.reply.status({ code, text }).headers(headers).body("")
 
             result ->

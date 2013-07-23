@@ -30,7 +30,7 @@ defmodule Urna do
          delete: "DELETE"
 
   @doc false
-  defmacro __before_compile__(env) do
+  defmacro __before_compile__(_env) do
     methods = Keyword.values(@verbs)
 
     quote do
@@ -84,51 +84,66 @@ defmodule Urna do
     end
   end
 
+  defmacro verb(name, do: body) do
+    method = to_binary(name) |> String.upcase
+    body   = Macro.escape(body)
+
+    quote do
+      path = endpoint_to_path(@endpoint)
+      body = unquote(body)
+
+      if @resource do
+        def :handle, [ unquote(method),
+                       quote(do: URI.Info[path: unquote(path)] = uri),
+                       quote(do: req) ], [], do: (quote do
+          body_to_response unquote(body)
+        end)
+      else
+        raise ArgumentError, message: "cannot define standalone verb outside a resource"
+      end
+    end
+  end
+
+  defmacro verb(name, variable, do: body) do
+    method   = to_binary(name) |> String.upcase
+    variable = Macro.escape(variable)
+    body     = Macro.escape(body)
+
+    quote do
+      path     = endpoint_to_path(@endpoint)
+      variable = unquote(variable)
+      body     = unquote(body)
+
+      if @resource do
+        def :handle, [ unquote(method),
+                       quote(do: URI.Info[path: unquote(path) <> "/" <> unquote(variable)] = uri),
+                       quote(do: req) ], [], do: (quote do
+          body_to_response unquote(body)
+        end)
+      else
+        def :handle, [ unquote(method),
+                       quote(do: URI.Info[path: unquote(path) <> "/" <> unquote(to_binary(variable))] = uri),
+                       quote(do: req) ], [], do: (quote do
+          body_to_response unquote(body)
+        end)
+      end
+    end
+  end
+
   Enum.each @verbs, fn { name, method } ->
     defmacro unquote(name)(do: body) do
       method = unquote(method)
-      body   = Macro.escape(body)
 
       quote do
-        path = endpoint_to_path(@endpoint)
-        body = unquote(body)
-
-        if @resource do
-          def :handle, [ unquote(method),
-                         quote(do: URI.Info[path: unquote(path)] = uri),
-                         quote(do: req) ], [], do: (quote do
-            body_to_response unquote(body)
-          end)
-        else
-          raise ArgumentError, message: "cannot define standalone verb outside a resource"
-        end
+        verb(unquote(method), do: unquote(body))
       end
     end
 
-    defmacro unquote(name)(name, do: body) do
+    defmacro unquote(name)(variable, do: body) do
       method = unquote(method)
-      name   = Macro.escape(name)
-      body   = Macro.escape(body)
 
       quote do
-        path = endpoint_to_path(@endpoint)
-        name = unquote(name)
-        body = unquote(body)
-
-        if @resource do
-          def :handle, [ unquote(method),
-                         quote(do: URI.Info[path: unquote(path) <> "/" <> unquote(name)] = uri),
-                         quote(do: req) ], [], do: (quote do
-            body_to_response unquote(body)
-          end)
-        else
-          def :handle, [ unquote(method),
-                         quote(do: URI.Info[path: unquote(path) <> "/" <> unquote(to_binary(name))] = uri),
-                         quote(do: req) ], [], do: (quote do
-            body_to_response unquote(body)
-          end)
-
-        end
+        verb(unquote(method), unquote(variable), do: unquote(body))
       end
     end
   end

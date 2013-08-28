@@ -50,7 +50,7 @@ defmodule Urna do
         raise ArgumentError, message: "cannot nest a namespace in a resource"
       end
 
-      @endpoint Stack.push(@endpoint, to_binary(unquote(name)))
+      @endpoint Stack.push(@endpoint, to_string(unquote(name)))
 
       unquote(body)
 
@@ -61,7 +61,7 @@ defmodule Urna do
   defmacro resource(name, do: body) do
     quote do
       @resource true
-      @endpoint Stack.push(@endpoint, to_binary(unquote(name)))
+      @endpoint Stack.push(@endpoint, to_string(unquote(name)))
 
       unquote(body)
 
@@ -85,7 +85,7 @@ defmodule Urna do
   end
 
   defmacro verb(name, do: body) do
-    method = to_binary(name) |> String.upcase
+    method = to_string(name) |> String.upcase
     body   = Macro.escape(body)
 
     quote do
@@ -105,7 +105,7 @@ defmodule Urna do
   end
 
   defmacro verb(name, variable, do: body) do
-    method   = to_binary(name) |> String.upcase
+    method   = to_string(name) |> String.upcase
     variable = Macro.escape(variable)
     body     = Macro.escape(body)
 
@@ -122,7 +122,7 @@ defmodule Urna do
         end)
       else
         def :handle, [ unquote(method),
-                       quote(do: URI.Info[path: unquote(path) <> "/" <> unquote(to_binary(variable))] = uri),
+                       quote(do: URI.Info[path: unquote(path) <> "/" <> unquote(to_string(variable))] = uri),
                        quote(do: req) ], [], do: (quote do
           body_to_response unquote(body)
         end)
@@ -253,7 +253,7 @@ defmodule Urna do
 
   defmacro redirect(uri) do
     quote do
-      { 301, [{ "Location", to_binary(unquote(uri)) }] }
+      { 301, [{ "Location", to_string(unquote(uri)) }] }
     end
   end
 end

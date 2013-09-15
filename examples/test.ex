@@ -8,7 +8,7 @@ defmodule Test do
       end
 
       get do
-        to_binary(uri)
+        to_string(uri)
       end
 
       get id do

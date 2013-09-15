@@ -9,8 +9,12 @@
 defmodule Urna do
   alias Data.Stack
 
-  def open(what, options // []) do
-    Cauldron.open(what, options)
+  def start(what, listener) do
+    Cauldron.start what, listener
+  end
+
+  def start_link(what, listener) do
+    Cauldron.start_link what, listener
   end
 
   defmacro __using__(_opts) do
@@ -31,10 +35,8 @@ defmodule Urna do
 
   @doc false
   defmacro __before_compile__(_env) do
-    methods = Keyword.values(@verbs)
-
     quote do
-      def handle(method, _, req) when not method in unquote(methods) do
+      def handle(method, _, req) when not method in unquote(Keyword.values(@verbs)) do
         req.reply(405)
       end
 
@@ -65,19 +67,15 @@ defmodule Urna do
 
       unquote(body)
 
-      path = endpoint_to_path(@endpoint)
+      @path endpoint_to_path(@endpoint)
 
-      def :handle, [ quote(do: _),
-                     quote(do: URI.Info[path: unquote(path)]),
-                     quote(do: req) ], [], do: (quote do
+      def handle(_, URI.Info[path: @path], req) do
         req.reply(405)
-      end)
+      end
 
-      def :handle, [ quote(do: _),
-                     quote(do: URI.Info[path: unquote(path) <> "/" <> rest]),
-                     quote(do: req) ], [], do: (quote do
+      def handle(_, URI.Info[path: @path <> "/" <> _], req) do
         req.reply(405)
-      end)
+      end
 
       @endpoint Stack.pop(@endpoint) |> elem(1)
       @resource false
@@ -85,19 +83,13 @@ defmodule Urna do
   end
 
   defmacro verb(name, do: body) do
-    method = to_string(name) |> String.upcase
-    body   = Macro.escape(body)
-
-    quote do
-      path = endpoint_to_path(@endpoint)
-      body = unquote(body)
+    quote bind_quoted: [method: to_string(name) |> String.upcase, body: Macro.escape(body)] do
+      @path endpoint_to_path(@endpoint)
 
       if @resource do
-        def :handle, [ unquote(method),
-                       quote(do: URI.Info[path: unquote(path)] = uri),
-                       quote(do: req) ], [], do: (quote do
+        def handle(unquote(method), URI.Info[path: @path] = uri, req) do
           body_to_response unquote(body)
-        end)
+        end
       else
         raise ArgumentError, message: "cannot define standalone verb outside a resource"
       end
@@ -105,27 +97,17 @@ defmodule Urna do
   end
 
   defmacro verb(name, variable, do: body) do
-    method   = to_string(name) |> String.upcase
-    variable = Macro.escape(variable)
-    body     = Macro.escape(body)
-
-    quote do
-      path     = endpoint_to_path(@endpoint)
-      variable = unquote(variable)
-      body     = unquote(body)
+    quote bind_quoted: [method: to_string(name) |> String.upcase, variable: Macro.escape(variable), body: Macro.escape(body)] do
+      @path endpoint_to_path(@endpoint)
 
       if @resource do
-        def :handle, [ unquote(method),
-                       quote(do: URI.Info[path: unquote(path) <> "/" <> unquote(variable)] = uri),
-                       quote(do: req) ], [], do: (quote do
+        def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(variable)] = uri, req) do
           body_to_response unquote(body)
-        end)
+        end
       else
-        def :handle, [ unquote(method),
-                       quote(do: URI.Info[path: unquote(path) <> "/" <> unquote(to_string(variable))] = uri),
-                       quote(do: req) ], [], do: (quote do
+        def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(to_string(variable))] = uri, req) do
           body_to_response unquote(body)
-        end)
+        end
       end
     end
   end

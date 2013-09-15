@@ -4,13 +4,13 @@ defmodule Urna.Mixfile do
   def project do
     [ app: :urna,
       version: "0.0.1",
-      elixir: "~> 0.10.0",
+      elixir: "~> 0.10.2",
       deps: deps ]
   end
 
   # Configuration for the OTP application
   def application do
-    [ applications: [:cauldron] ]
+    []
   end
 
   # Returns the list of dependencies in the format:

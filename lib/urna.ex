@@ -142,7 +142,7 @@ defmodule Urna do
       decoded = if content do
         case req.headers["Content-Type"] || "application/json" do
           "application/json" ->
-            JSON.decode!(content)
+            JSON.decode(content)
 
           "application/x-www-form-urlencoded" ->
             { :ok, URI.decode_query(content, []) }

@@ -1,5 +1,5 @@
 [ "cauldron": {:git, "git://github.com/meh/cauldron.git", "7b4d3eaad07ffdf6da9ec1aba598041e304fb7ad", []},
-  "datastructures": {:git, "git://github.com/meh/elixir-datastructures.git", "502ecde77c46ec1d36bb51871f92b9be58aab7a6", []},
+  "datastructures": {:git, "git://github.com/meh/elixir-datastructures.git", "a72a760cb1f4143c721869f1d4660dd57062087a", []},
   "derp": {:git, "git://github.com/meh/derp.git", "6a2ebab02750b5526d84abb14db0f65c68088787", []},
   "exts": {:git, "git://github.com/meh/exts.git", "16a26da86d2018e91297eea9c18214ddf09d8bb8", []},
   "finalizer": {:git, "git://github.com/meh/elixir-finalizer.git", "9c38d9145824a46c66f1a010e137a953a6c78e04", []},

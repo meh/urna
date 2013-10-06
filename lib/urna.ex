@@ -8,6 +8,7 @@
 
 defmodule Urna do
   alias Data.Stack
+  alias Data.Dict
 
   def start(what, listener) do
     Cauldron.start what, listener
@@ -17,9 +18,11 @@ defmodule Urna do
     Cauldron.start_link what, listener
   end
 
-  defmacro __using__(_opts) do
+  defmacro __using__(opts) do
     quote do
       import Urna
+
+      @headers unquote(opts[:headers]) || []
 
       @before_compile unquote(__MODULE__)
       @resource false
@@ -163,20 +166,21 @@ defmodule Urna do
               req.reply(code)
 
             { code, text } when is_integer(code) and is_binary(text) ->
-              req.reply({ code, text })
+              req.reply.status({ code, text }).headers(@headers).body("")
 
             { code, headers } when is_integer(code) ->
-              req.reply.status(code).headers(headers).body("")
+              req.reply.status(code).headers(@headers |> Dict.merge(headers)).body("")
 
             { code, text, headers } when is_integer(code) and is_binary(text) ->
-              req.reply.status({ code, text }).headers(headers).body("")
+              req.reply.status({ code, text }).headers(@headers |> Dict.merge(headers)).body("")
 
             result ->
-              req.reply(200, [{ "Content-Type", "application/json" }], JSON.encode!(result))
+              req.reply(200, @headers |> Dict.merge([{ "Content-Type", "application/json" }]),
+                JSON.encode!(result))
           end
 
         { :error, _ } ->
-          req.reply(406)
+          req.reply(406, @headers)
       end
     end
   end

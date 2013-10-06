@@ -23,6 +23,7 @@ defmodule Urna do
       import Urna
 
       @headers unquote(opts[:headers]) || []
+      @allow   unquote(opts[:allow]) || false
 
       @before_compile unquote(__MODULE__)
       @resource false
@@ -40,11 +41,11 @@ defmodule Urna do
   defmacro __before_compile__(_env) do
     quote do
       def handle(method, _, req) when not method in unquote(Keyword.values(@verbs)) do
-        req.reply(405, @headers, "")
+        req.reply(405, prepare_headers(req.headers), "")
       end
 
       def handle(_, uri, req) do
-        req.reply(404, @headers, "")
+        req.reply(404, prepare_headers(req.headers), "")
       end
     end
   end
@@ -73,11 +74,11 @@ defmodule Urna do
       @path endpoint_to_path(@endpoint)
 
       def handle(_, URI.Info[path: @path], req) do
-        req.reply(405, @headers, "")
+        req.reply(405, prepare_headers(req.headers), "")
       end
 
       def handle(_, URI.Info[path: @path <> "/" <> _], req) do
-        req.reply(405, @headers, "")
+        req.reply(405, prepare_headers(req.headers), "")
       end
 
       @endpoint Stack.pop(@endpoint) |> elem(1)
@@ -162,27 +163,75 @@ defmodule Urna do
           __uri__ = uri
 
           case unquote(body) do
-            { code } when is_integer(code) ->
-              req.reply(code, @headers, "")
+            { code } when code |> is_integer or code |> is_tuple  ->
+              req.reply(code, prepare_headers(req.headers), "")
 
-            { code, text } when is_integer(code) and is_binary(text) ->
-              req.reply({ code, text }, @headers, "")
-
-            { code, headers } when is_integer(code) ->
-              req.reply(code, @headers |> Dict.merge(headers), "")
-
-            { code, text, headers } when is_integer(code) and is_binary(text) ->
-              req.reply({ code, text }, @headers |> Dict.merge(headers), "")
+            { code, headers } when code |> is_integer or code |> is_tuple ->
+              req.reply(code, prepare_headers(req.headers, headers), "")
 
             result ->
-              req.reply(200, @headers |> Dict.merge([{ "Content-Type", "application/json" }]),
+              req.reply(200, prepare_headers(req.headers, [{ "Content-Type", "application/json" }]),
                 JSON.encode!(result))
           end
 
         { :error, _ } ->
-          req.reply(406, @headers, "")
+          req.reply(406, prepare_headers(req.headers), "")
       end
     end
+  end
+
+  defmacro prepare_headers(request) do
+    quote do
+      Urna.prepare_headers(@allow, unquote(request), @headers, [])
+    end
+  end
+
+  defmacro prepare_headers(request, user) do
+    quote do
+      Urna.prepare_headers(@allow, unquote(request), @headers, unquote(user))
+    end
+  end
+
+  def prepare_headers(allow, request, default, user) do
+    headers = Dict.merge(default, user)
+
+    case allow[:origins] do
+      nil ->
+        headers = headers |> Dict.put("Access-Control-Allow-Origin", "*")
+
+      list when list |> is_list ->
+        headers = headers |> Dict.put("Access-Control-Allow-Origin", Enum.join(list, ", "))
+    end
+
+    case allow[:headers] do
+      true ->
+        headers = headers |> Dict.put("Access-Control-Allow-Headers",
+          Dict.get(request, "Access-Control-Request-Headers", "*"))
+
+      list when list |> is_list ->
+        headers = headers |> Dict.put("Access-Control-Allow-Headers", Enum.join(list, ", "))
+
+      _ ->
+        nil
+    end
+
+    case allow[:methods] do
+      true ->
+        headers = headers |> Dict.put("Access-Control-Allow-Methods",
+          Dict.get(request, "Access-Control-Request-Method", "*"))
+
+      list when list |> is_list ->
+        headers = headers |> Dict.put("Access-Control-Allow-Methods", Enum.join(list, ", "))
+
+      _ ->
+        nil
+    end
+
+    if allow[:credentials] do
+      headers = headers |> Dict.put("Access-Control-Allow-Credentials", "true")
+    end
+
+    headers
   end
 
   defmacro headers do
@@ -209,13 +258,13 @@ defmodule Urna do
 
   defmacro success(code, text_or_headers) when code in 100 .. 399 do
     quote do
-      { unquote(code), unquote(text_or_headers) }
+      { { unquote(code), unquote(text_or_headers) } }
     end
   end
 
   defmacro success(code, text, headers) when code in 100 .. 399 do
     quote do
-      { unquote(code), unquote(text), unquote(headers) }
+      { { unquote(code), unquote(text) }, unquote(headers) }
     end
   end
 
@@ -227,13 +276,19 @@ defmodule Urna do
 
   defmacro fail(code, text_or_headers) when code in 400 .. 599 do
     quote do
-      { unquote(code), unquote(text_or_headers) }
+      text_or_headers = unquote(text_or_headers)
+
+      if text_or_headers |> is_binary do
+        { { unquote(code), text_or_headers } }
+      else
+        { unquote(code), text_or_headers }
+      end
     end
   end
 
   defmacro fail(code, text, headers) when code in 400 .. 599 do
     quote do
-      { unquote(code), unquote(text), unquote(headers) }
+      { { unquote(code), unquote(text) }, unquote(headers) }
     end
   end
 

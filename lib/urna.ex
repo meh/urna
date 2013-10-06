@@ -40,11 +40,11 @@ defmodule Urna do
   defmacro __before_compile__(_env) do
     quote do
       def handle(method, _, req) when not method in unquote(Keyword.values(@verbs)) do
-        req.reply(405)
+        req.reply(405, @headers, "")
       end
 
       def handle(_, uri, req) do
-        req.reply(404)
+        req.reply(404, @headers, "")
       end
     end
   end
@@ -73,11 +73,11 @@ defmodule Urna do
       @path endpoint_to_path(@endpoint)
 
       def handle(_, URI.Info[path: @path], req) do
-        req.reply(405)
+        req.reply(405, @headers, "")
       end
 
       def handle(_, URI.Info[path: @path <> "/" <> _], req) do
-        req.reply(405)
+        req.reply(405, @headers, "")
       end
 
       @endpoint Stack.pop(@endpoint) |> elem(1)
@@ -163,16 +163,16 @@ defmodule Urna do
 
           case unquote(body) do
             { code } when is_integer(code) ->
-              req.reply(code)
+              req.reply(code, @headers, "")
 
             { code, text } when is_integer(code) and is_binary(text) ->
-              req.reply.status({ code, text }).headers(@headers).body("")
+              req.reply({ code, text }, @headers, "")
 
             { code, headers } when is_integer(code) ->
-              req.reply.status(code).headers(@headers |> Dict.merge(headers)).body("")
+              req.reply(code, @headers |> Dict.merge(headers), "")
 
             { code, text, headers } when is_integer(code) and is_binary(text) ->
-              req.reply.status({ code, text }).headers(@headers |> Dict.merge(headers)).body("")
+              req.reply({ code, text }, @headers |> Dict.merge(headers), "")
 
             result ->
               req.reply(200, @headers |> Dict.merge([{ "Content-Type", "application/json" }]),
@@ -180,7 +180,7 @@ defmodule Urna do
           end
 
         { :error, _ } ->
-          req.reply(406, @headers)
+          req.reply(406, @headers, "")
       end
     end
   end

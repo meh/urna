@@ -256,9 +256,15 @@ defmodule Urna do
     end
   end
 
-  defmacro success(code, text_or_headers) when code in 100 .. 399 do
+  defmacro success(code, text) when code in 100 .. 399 and text |> is_binary do
     quote do
-      { { unquote(code), unquote(text_or_headers) } }
+      { { unquote(code), unquote(text) } }
+    end
+  end
+
+  defmacro success(code, headers) when code in 100 .. 399 do
+    quote do
+      { unquote(code), unquote(headers) }
     end
   end
 
@@ -274,15 +280,15 @@ defmodule Urna do
     end
   end
 
-  defmacro fail(code, text_or_headers) when code in 400 .. 599 do
+  defmacro fail(code, text) when code in 400 .. 599 and text |> is_binary do
     quote do
-      text_or_headers = unquote(text_or_headers)
+      { { unquote(code), unquote(text) } }
+    end
+  end
 
-      if text_or_headers |> is_binary do
-        { { unquote(code), text_or_headers } }
-      else
-        { unquote(code), text_or_headers }
-      end
+  defmacro fail(code, headers) when code in 400 .. 599 do
+    quote do
+      { unquote(code), unquote(headers) }
     end
   end
 

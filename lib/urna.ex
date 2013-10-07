@@ -195,40 +195,42 @@ defmodule Urna do
   def prepare_headers(allow, request, default, user) do
     headers = Dict.merge(default, user)
 
-    case allow[:origins] do
-      nil ->
-        headers = headers |> Dict.put("Access-Control-Allow-Origin", "*")
+    if allow do
+      case allow[:origins] do
+        nil ->
+          headers = headers |> Dict.put("Access-Control-Allow-Origin", "*")
 
-      list when list |> is_list ->
-        headers = headers |> Dict.put("Access-Control-Allow-Origin", Enum.join(list, ", "))
-    end
+        list when list |> is_list ->
+          headers = headers |> Dict.put("Access-Control-Allow-Origin", Enum.join(list, ", "))
+      end
 
-    case allow[:headers] do
-      true ->
-        headers = headers |> Dict.put("Access-Control-Allow-Headers",
-          Dict.get(request, "Access-Control-Request-Headers", "*"))
+      case allow[:headers] do
+        true ->
+          headers = headers |> Dict.put("Access-Control-Allow-Headers",
+            Dict.get(request, "Access-Control-Request-Headers", "*"))
 
-      list when list |> is_list ->
-        headers = headers |> Dict.put("Access-Control-Allow-Headers", Enum.join(list, ", "))
+        list when list |> is_list ->
+          headers = headers |> Dict.put("Access-Control-Allow-Headers", Enum.join(list, ", "))
 
-      _ ->
-        nil
-    end
+        _ ->
+          nil
+      end
 
-    case allow[:methods] do
-      true ->
-        headers = headers |> Dict.put("Access-Control-Allow-Methods",
-          Dict.get(request, "Access-Control-Request-Method", "*"))
+      case allow[:methods] do
+        true ->
+          headers = headers |> Dict.put("Access-Control-Allow-Methods",
+            Dict.get(request, "Access-Control-Request-Method", "*"))
 
-      list when list |> is_list ->
-        headers = headers |> Dict.put("Access-Control-Allow-Methods", Enum.join(list, ", "))
+        list when list |> is_list ->
+          headers = headers |> Dict.put("Access-Control-Allow-Methods", Enum.join(list, ", "))
 
-      _ ->
-        nil
-    end
+        _ ->
+          nil
+      end
 
-    if allow[:credentials] do
-      headers = headers |> Dict.put("Access-Control-Allow-Credentials", "true")
+      if allow[:credentials] do
+        headers = headers |> Dict.put("Access-Control-Allow-Credentials", "true")
+      end
     end
 
     headers

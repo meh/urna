@@ -198,10 +198,14 @@ defmodule Urna do
     if allow do
       case allow[:origins] do
         nil ->
-          headers = headers |> Dict.put("Access-Control-Allow-Origin", "*")
+          headers = headers |> Dict.put("Access-Control-Allow-Origin", Dict.get(request, "Origin"))
 
         list when list |> is_list ->
-          headers = headers |> Dict.put("Access-Control-Allow-Origin", Enum.join(list, ", "))
+          origin = Dict.get(request, "Origin")
+
+          if Enum.member?(list, origin) do
+            headers = headers |> Dict.put("Access-Control-Allow-Origin", origin)
+          end
       end
 
       case allow[:headers] do

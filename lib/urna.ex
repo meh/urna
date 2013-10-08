@@ -26,8 +26,10 @@ defmodule Urna do
       @allow   unquote(opts[:allow]) || false
 
       @before_compile unquote(__MODULE__)
-      @resource false
-      @endpoint Data.Stack.Simple.new
+
+      @resource  false
+      @endpoint  Stack.Simple.new
+      @endpoints HashDict.new
     end
   end
 
@@ -40,12 +42,44 @@ defmodule Urna do
   @doc false
   defmacro __before_compile__(_env) do
     quote do
-      def handle(method, _, req) when not method in unquote(Keyword.values(@verbs)) do
-        req.reply(405, prepare_headers(req.headers), "")
+      def handle("OPTIONS", URI.Info[path: path], req) do
+        endpoint = Enum.find @endpoints, fn { endpoint, methods } ->
+          path |> String.starts_with? endpoint
+        end
+
+        if endpoint do
+          if @allow do
+            methods = Enum.map(elem(endpoint, 1), fn
+              { name, _ } -> name
+              name        -> name
+            end) |> Enum.uniq
+
+            headers = prepare_headers(req.headers)
+            headers = headers |> Dict.put("Access-Control-Allow-Methods", Enum.join(methods, ", "))
+
+            req.reply(200, headers, "")
+          else
+            req.reply(405)
+          end
+        else
+          req.reply(404)
+        end
       end
 
-      def handle(_, uri, req) do
-        req.reply(404, prepare_headers(req.headers), "")
+      def handle(_, URI.Info[path: path], req) do
+        endpoint = Enum.find @endpoints, fn { endpoint, methods } ->
+          path |> String.starts_with? endpoint
+        end
+
+        if endpoint do
+          req.reply(405)
+        else
+          req.reply(404)
+        end
+      end
+
+      def endpoints do
+        @endpoints
       end
     end
   end
@@ -69,17 +103,10 @@ defmodule Urna do
       @resource true
       @endpoint Stack.push(@endpoint, to_string(unquote(name)))
 
-      unquote(body)
-
       @path endpoint_to_path(@endpoint)
+      @endpoints Dict.put(@endpoints, @path, [])
 
-      def handle(_, URI.Info[path: @path], req) do
-        req.reply(405, prepare_headers(req.headers), "")
-      end
-
-      def handle(_, URI.Info[path: @path <> "/" <> _], req) do
-        req.reply(405, prepare_headers(req.headers), "")
-      end
+      unquote(body)
 
       @endpoint Stack.pop(@endpoint) |> elem(1)
       @resource false
@@ -88,30 +115,64 @@ defmodule Urna do
 
   defmacro verb(name, do: body) do
     quote bind_quoted: [method: to_string(name) |> String.upcase, body: Macro.escape(body)] do
+      unless @resource do
+        raise ArgumentError, message: "cannot define standalone verb outside a resource"
+      end
+
       @path endpoint_to_path(@endpoint)
 
-      if @resource do
-        def handle(unquote(method), URI.Info[path: @path] = uri, req) do
-          body_to_response unquote(body)
-        end
-      else
-        raise ArgumentError, message: "cannot define standalone verb outside a resource"
+      if Enum.find(@endpoints[@path], fn
+        ^method -> true
+        _       -> false
+      end) do
+        raise ArgumentError, message: "#{method} already defined"
+      end
+
+      @endpoints Dict.update(@endpoints, @path, fn endpoint ->
+        [method | endpoint]
+      end)
+
+      def handle(unquote(method), URI.Info[path: @path] = uri, req) do
+        body_to_response unquote(body)
       end
     end
   end
 
-  defmacro verb(name, variable, do: body) do
-    quote bind_quoted: [method: to_string(name) |> String.upcase, variable: Macro.escape(variable), body: Macro.escape(body)] do
+  defmacro verb(name, path, do: body) when path |> is_atom do
+    quote bind_quoted: [method: to_string(name) |> String.upcase, path: to_string(path), body: Macro.escape(body)] do
+      if @resource do
+        raise ArgumentError, "cannot define standalone verb inside a resource"
+      end
+
       @path endpoint_to_path(@endpoint)
 
-      if @resource do
-        def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(variable)] = uri, req) do
-          body_to_response unquote(body)
-        end
-      else
-        def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(to_string(variable))] = uri, req) do
-          body_to_response unquote(body)
-        end
+      def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(path)] = uri, req) do
+        body_to_response unquote(body)
+      end
+    end
+  end
+
+  defmacro verb(name, { id, _, _ } = variable, do: body) do
+    quote bind_quoted: [method: to_string(name) |> String.upcase, id: id, variable: Macro.escape(variable), body: Macro.escape(body)] do
+      unless @resource do
+        raise ArgumentError, message: "cannot define standalone verb outside a resource"
+      end
+
+      @path endpoint_to_path(@endpoint)
+
+      if Enum.find(@endpoints[@path], fn
+        { ^method, _ } -> true
+        _              -> false
+      end) do
+        raise ArgumentError, message: "#{method}/#{id} already defined"
+      end
+
+      @endpoints Dict.update(@endpoints, @path, fn endpoint ->
+        [{ method, id } | endpoint]
+      end)
+
+      def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(variable)] = uri, req) do
+        body_to_response unquote(body)
       end
     end
   end
@@ -196,44 +257,53 @@ defmodule Urna do
     headers = Dict.merge(default, user)
 
     if allow do
-      case allow[:origins] do
-        nil ->
-          headers = headers |> Dict.put("Access-Control-Allow-Origin", Dict.get(request, "Origin"))
+      unless headers |> Dict.has_key?("Access-Control-Allow-Origin") do
+        case allow[:origins] do
+          nil ->
+            headers = headers |> Dict.put("Access-Control-Allow-Origin",
+              Dict.get(request, "Origin", "*"))
 
-        list when list |> is_list ->
-          origin = Dict.get(request, "Origin")
+          list when list |> is_list ->
+            origin = Dict.get(request, "Origin")
 
-          if Enum.member?(list, origin) do
-            headers = headers |> Dict.put("Access-Control-Allow-Origin", origin)
-          end
+            if Enum.member?(list, origin) do
+              headers = headers |> Dict.put("Access-Control-Allow-Origin", origin)
+            end
+        end
       end
 
-      case allow[:headers] do
-        true ->
-          headers = headers |> Dict.put("Access-Control-Allow-Headers",
-            Dict.get(request, "Access-Control-Request-Headers", "*"))
+      unless headers |> Dict.has_key?("Access-Control-Allow-Headers") do
+        case allow[:headers] do
+          true ->
+            headers = headers |> Dict.put("Access-Control-Allow-Headers",
+              Dict.get(request, "Access-Control-Request-Headers", "*"))
 
-        list when list |> is_list ->
-          headers = headers |> Dict.put("Access-Control-Allow-Headers", Enum.join(list, ", "))
+          list when list |> is_list ->
+            headers = headers |> Dict.put("Access-Control-Allow-Headers", Enum.join(list, ", "))
 
-        _ ->
-          nil
+          _ ->
+            nil
+        end
       end
 
-      case allow[:methods] do
-        true ->
-          headers = headers |> Dict.put("Access-Control-Allow-Methods",
-            Dict.get(request, "Access-Control-Request-Method", "*"))
+      unless headers |> Dict.has_key?("Access-Control-Allow-Methods") do
+        case allow[:methods] do
+          true ->
+            headers = headers |> Dict.put("Access-Control-Allow-Methods",
+              Dict.get(request, "Access-Control-Request-Method", "*"))
 
-        list when list |> is_list ->
-          headers = headers |> Dict.put("Access-Control-Allow-Methods", Enum.join(list, ", "))
+          list when list |> is_list ->
+            headers = headers |> Dict.put("Access-Control-Allow-Methods", Enum.join(list, ", "))
 
-        _ ->
-          nil
+          _ ->
+            nil
+        end
       end
 
-      if allow[:credentials] do
-        headers = headers |> Dict.put("Access-Control-Allow-Credentials", "true")
+      unless headers |> Dict.has_key?("Access-Control-Allow-Credentials") do
+        if allow[:credentials] do
+          headers = headers |> Dict.put("Access-Control-Allow-Credentials", "true")
+        end
       end
     end
 

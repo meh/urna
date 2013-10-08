@@ -18,6 +18,19 @@ defmodule Urna do
     Cauldron.start_link what, listener
   end
 
+  @doc """
+  Make the DSL available to the module.
+
+  ## Options
+
+  * `:headers` - default headers to send with every response
+  * `:allow`   - CORS rules for what to allow
+    - `:origins`     - list of origins to allow
+    - `:methods`     - list of methods to allow or `true` to allow any method
+    - `:headers`     - list of headers to allow or `true` to allow any header
+    - `:credentials` - whether to allow credentials or not
+
+  """
   defmacro __using__(opts) do
     quote do
       import Urna

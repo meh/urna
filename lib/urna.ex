@@ -361,16 +361,12 @@ defmodule Urna do
 
       accept ->
         accept |> Seq.group_by(&elem(&1, 1)) |> Seq.sort(&(elem(&1, 0) > elem(&2, 0)))
-          |> Seq.reduce(nil, fn
-            { _, types }, nil ->
-              Seq.find_value types, fn { name, _ } ->
-                if adapter = Seq.find adapters, &(&1.accept?(name)) do
-                  { name, adapter }
-                end
+          |> Seq.find_value(fn { _, types } ->
+            Seq.find_value types, fn { name, _ } ->
+              if adapter = Seq.find adapters, &(&1.accept?(name)) do
+                { name, adapter }
               end
-
-            _, found ->
-              found
+            end
           end) || { nil, nil }
     end
 

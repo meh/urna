@@ -275,13 +275,13 @@ defmodule Urna do
 
   defmacro prepare_headers(request) do
     quote do
-      Urna.prepare_headers(@allow, unquote(request), @headers, [])
+      prepare_headers(@allow, unquote(request), @headers, [])
     end
   end
 
   defmacro prepare_headers(request, user) do
     quote do
-      Urna.prepare_headers(@allow, unquote(request), @headers, unquote(user))
+      prepare_headers(@allow, unquote(request), @headers, unquote(user))
     end
   end
 
@@ -344,7 +344,7 @@ defmodule Urna do
 
   defmacro prepare_response(request, result) do
     quote do
-      Urna.prepare_response(@adapters, unquote(request), unquote(result))
+      prepare_response(@adapters, unquote(request), unquote(result))
     end
   end
 
@@ -391,57 +391,71 @@ defmodule Urna do
     quote do: URI.decode_query(__uri__.query, [])
   end
 
-  defmacro success(code) when code in 100 .. 399 do
-    quote do
-      { unquote(code) }
-    end
+  def reply(code) when code in 100 .. 399 do
+    { code }
   end
 
-  defmacro success(code, text) when code in 100 .. 399 and text |> is_binary do
-    quote do
-      { { unquote(code), unquote(text) } }
-    end
+  def reply(code, text) when code in 100 .. 399 and text |> is_binary do
+    { { code, text } }
   end
 
-  defmacro success(code, headers) when code in 100 .. 399 do
-    quote do
-      { unquote(code), unquote(headers) }
-    end
+  def reply(code, headers) when code in 100 .. 399 do
+    { code, headers }
   end
 
-  defmacro success(code, text, headers) when code in 100 .. 399 do
-    quote do
-      { { unquote(code), unquote(text) }, unquote(headers) }
-    end
+  def reply(result, code) when code in 100 .. 399 do
+    { code, [], result }
   end
 
-  defmacro fail(code) when code in 400 .. 599 do
-    quote do
-      { unquote(code) }
-    end
+  def reply(code, text, headers) when code in 100 .. 399 and text |> is_binary do
+    { { code, text }, headers }
   end
 
-  defmacro fail(code, text) when code in 400 .. 599 and text |> is_binary do
-    quote do
-      { { unquote(code), unquote(text) } }
-    end
+  def reply(result, code, text) when code in 100 .. 399 and text |> is_binary do
+    { { code, text }, [], result }
   end
 
-  defmacro fail(code, headers) when code in 400 .. 599 do
-    quote do
-      { unquote(code), unquote(headers) }
-    end
+  def reply(result, code, headers) when code in 100 .. 399 do
+    { code, headers, result }
   end
 
-  defmacro fail(code, text, headers) when code in 400 .. 599 do
-    quote do
-      { { unquote(code), unquote(text) }, unquote(headers) }
-    end
+  def reply(result, code, text, headers) when code in 100 .. 399 and text |> is_binary do
+    { { code, text }, headers, result }
   end
 
-  defmacro redirect(uri) do
-    quote do
-      { 301, [{ "Location", to_string(unquote(uri)) }] }
-    end
+  def fail(code) when code in 400 .. 599 do
+    { code }
+  end
+
+  def fail(code, text) when code in 400 .. 599 and text |> is_binary do
+    { { code, text } }
+  end
+
+  def fail(code, headers) when code in 400 .. 599 do
+    { code, headers }
+  end
+
+  def fail(result, code) when code in 400 .. 599 do
+    { code, [], result }
+  end
+
+  def fail(code, text, headers) when code in 400 .. 599 and text |> is_binary do
+    { { code, text }, headers }
+  end
+
+  def fail(result, code, text) when code in 400 .. 599 and text |> is_binary do
+    { { code, text }, [], result }
+  end
+
+  def fail(result, code, headers) when code in 400 .. 599 do
+    { code, headers, result }
+  end
+
+  def fail(result, code, text, headers) when code in 400 .. 599 and text |> is_binary do
+    { { code, text }, headers, result }
+  end
+
+  def redirect(uri) do
+    { 301, [{ "Location", to_string(uri) }] }
   end
 end

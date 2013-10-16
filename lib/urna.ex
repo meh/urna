@@ -9,6 +9,7 @@
 defmodule Urna do
   alias Data.Stack
   alias Data.Dict
+  alias Data.Seq
 
   def start(what, listener) do
     Cauldron.start what, listener
@@ -29,14 +30,16 @@ defmodule Urna do
     - `:methods`     - list of methods to allow or `true` to allow any method
     - `:headers`     - list of headers to allow or `true` to allow any header
     - `:credentials` - whether to allow credentials or not
+  * `:adapters` - list of adapters, defaults to [Urna.JSON]
 
   """
   defmacro __using__(opts) do
     quote do
       import Urna
 
-      @headers unquote(opts[:headers]) || []
-      @allow   unquote(opts[:allow]) || false
+      @headers  unquote(opts[:headers]) || []
+      @allow    unquote(opts[:allow]) || false
+      @adapters unquote(opts[:adapters]) || [Urna.JSON]
 
       @before_compile unquote(__MODULE__)
 
@@ -56,19 +59,19 @@ defmodule Urna do
   defmacro __before_compile__(_env) do
     quote do
       def handle("OPTIONS", URI.Info[path: path], req) do
-        endpoint = Enum.find @endpoints, fn { endpoint, methods } ->
+        endpoint = Seq.find @endpoints, fn { endpoint, methods } ->
           path |> String.starts_with? endpoint
         end
 
         if endpoint do
           if @allow do
-            methods = Enum.map(elem(endpoint, 1), fn
+            methods = Seq.map(elem(endpoint, 1), fn
               { name, _ } -> name
               name        -> name
-            end) |> Enum.uniq
+            end) |> Seq.uniq
 
             headers = prepare_headers(req.headers)
-            headers = headers |> Dict.put("Access-Control-Allow-Methods", Enum.join(methods, ", "))
+            headers = headers |> Dict.put("Access-Control-Allow-Methods", Seq.join(methods, ", "))
 
             req.reply(200, headers, "")
           else
@@ -80,7 +83,7 @@ defmodule Urna do
       end
 
       def handle(_, URI.Info[path: path], req) do
-        endpoint = Enum.find @endpoints, fn { endpoint, methods } ->
+        endpoint = Seq.find @endpoints, fn { endpoint, methods } ->
           path |> String.starts_with? endpoint
         end
 
@@ -134,7 +137,7 @@ defmodule Urna do
 
       @path endpoint_to_path(@endpoint)
 
-      if Enum.find(@endpoints[@path], fn
+      if Seq.find(@endpoints[@path], fn
         ^method -> true
         _       -> false
       end) do
@@ -173,7 +176,7 @@ defmodule Urna do
 
       @path endpoint_to_path(@endpoint)
 
-      if Enum.find(@endpoints[@path], fn
+      if Seq.find(@endpoints[@path], fn
         { ^method, _ } -> true
         _              -> false
       end) do
@@ -190,7 +193,7 @@ defmodule Urna do
     end
   end
 
-  Enum.each @verbs, fn { name, method } ->
+  Seq.each @verbs, fn { name, method } ->
     defmacro unquote(name)(do: body) do
       method = unquote(method)
 
@@ -210,7 +213,7 @@ defmodule Urna do
 
   @doc false
   def endpoint_to_path(stack) do
-    "/" <> (Data.to_list(stack) |> Data.reverse |> Enum.join("/"))
+    "/" <> (Data.to_list(stack) |> Data.reverse |> Seq.join("/"))
   end
 
   @doc false
@@ -218,15 +221,13 @@ defmodule Urna do
     quote do
       content = req.body
       decoded = if content do
-        case req.headers["Content-Type"] || "application/json" do
-          "application/json" ->
-            JSON.decode(content)
+        type    = req.headers["Content-Type"]
+        adapter = Seq.find @adapters, &(&1.accept?(type))
 
-          "application/x-www-form-urlencoded" ->
-            { :ok, URI.decode_query(content, []) }
-
-          _ ->
-            { :error, :unsupported_content_type }
+        if adapter do
+          adapter.decode(type, content)
+        else
+          { :error, :unsupported_content_type }
         end
       else
         { :ok, nil }
@@ -243,9 +244,27 @@ defmodule Urna do
             { code, headers } when code |> is_integer or code |> is_tuple ->
               req.reply(code, prepare_headers(req.headers, headers), "")
 
+            { code, headers, result } ->
+              case prepare_response(req.headers, result) do
+                { type, response } ->
+                  req.reply(code,
+                            prepare_headers(req.headers, Dict.put(headers, "Content-Type", type)),
+                            response)
+
+                nil ->
+                  req.reply(406, prepare_headers(req.headers, headers), "")
+              end
+
             result ->
-              req.reply(200, prepare_headers(req.headers, [{ "Content-Type", "application/json" }]),
-                JSON.encode!(result))
+              case prepare_response(req.headers, result) do
+                { type, response } ->
+                  req.reply(200,
+                            prepare_headers(req.headers, [{ "Content-Type", type }]),
+                            response)
+
+                nil ->
+                  req.reply(406, prepare_headers(req.headers), "")
+              end
           end
 
         { :error, _ } ->
@@ -279,7 +298,7 @@ defmodule Urna do
           list when list |> is_list ->
             origin = Dict.get(request, "Origin")
 
-            if Enum.member?(list, origin) do
+            if Data.contains?(list, origin) do
               headers = headers |> Dict.put("Access-Control-Allow-Origin", origin)
             end
         end
@@ -292,7 +311,7 @@ defmodule Urna do
               Dict.get(request, "Access-Control-Request-Headers", "*"))
 
           list when list |> is_list ->
-            headers = headers |> Dict.put("Access-Control-Allow-Headers", Enum.join(list, ", "))
+            headers = headers |> Dict.put("Access-Control-Allow-Headers", Seq.join(list, ", "))
 
           _ ->
             nil
@@ -306,7 +325,7 @@ defmodule Urna do
               Dict.get(request, "Access-Control-Request-Method", "*"))
 
           list when list |> is_list ->
-            headers = headers |> Dict.put("Access-Control-Allow-Methods", Enum.join(list, ", "))
+            headers = headers |> Dict.put("Access-Control-Allow-Methods", Seq.join(list, ", "))
 
           _ ->
             nil
@@ -321,6 +340,43 @@ defmodule Urna do
     end
 
     headers
+  end
+
+  defmacro prepare_response(request, result) do
+    quote do
+      Urna.prepare_response(@adapters, unquote(request), unquote(result))
+    end
+  end
+
+  def prepare_response(adapters, request, result) do
+    { mime, adapter } = case request["Accept"] do
+      nil ->
+        { nil, hd(adapters) }
+
+      [{ "*/*", _ }] ->
+        { nil, hd(adapters) }
+
+      [{ name, _ }] ->
+        { name, Seq.find(adapters, &(&1.accept?(name))) }
+
+      accept ->
+        accept |> Seq.group_by(&elem(&1, 1)) |> Seq.sort(&(elem(&1, 0) > elem(&2, 0)))
+          |> Seq.reduce(nil, fn
+            { _, types }, nil ->
+              Seq.find_value types, fn { name, _ } ->
+                if adapter = Seq.find adapters, &(&1.accept?(name)) do
+                  { name, adapter }
+                end
+              end
+
+            _, found ->
+              found
+          end) || { nil, nil }
+    end
+
+    if adapter do
+      adapter.encode(mime, result)
+    end
   end
 
   defmacro headers do

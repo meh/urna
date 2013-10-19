@@ -154,7 +154,7 @@ defmodule Urna do
     end
   end
 
-  defmacro verb(name, path, do: body) when path |> is_atom do
+  defmacro verb(name, path, do: body) when path |> is_atom or path |> is_binary do
     quote bind_quoted: [method: to_string(name) |> String.upcase, path: to_string(path), body: Macro.escape(body)] do
       if @resource do
         raise ArgumentError, "cannot define standalone verb inside a resource"
@@ -168,8 +168,14 @@ defmodule Urna do
     end
   end
 
-  defmacro verb(name, { id, _, _ } = variable, do: body) do
-    quote bind_quoted: [method: to_string(name) |> String.upcase, id: id, variable: Macro.escape(variable), body: Macro.escape(body)] do
+  defmacro verb(name, { _, _, _ } = variable, do: body) do
+    quote do
+      verb(unquote(name), unquote(variable), [], do: unquote(body))
+    end
+  end
+
+  defmacro verb(name, { id, _, _ } = variable, options, do: body) do
+    quote bind_quoted: [method: to_string(name) |> String.upcase, id: id, variable: Macro.escape(variable), options: options, body: Macro.escape(body)] do
       unless @resource do
         raise ArgumentError, message: "cannot define standalone verb outside a resource"
       end
@@ -187,8 +193,25 @@ defmodule Urna do
         [{ method, id } | endpoint]
       end)
 
-      def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(variable)] = uri, req) do
-        body_to_response unquote(body)
+      case options[:as] do
+        as when as in [nil, String] ->
+          def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(variable)] = uri, req) do
+            body_to_response unquote(body)
+          end
+
+        Integer ->
+          def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(variable)] = uri, req) do
+            unquote(variable) = unquote(variable) |> Integer.parse |> elem(0)
+
+            body_to_response unquote(body)
+          end
+
+        Float ->
+          def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(variable)] = uri, req) do
+            unquote(variable) = unquote(variable) |> Float.parse |> elem(0)
+
+            body_to_response unquote(body)
+          end
       end
     end
   end
@@ -207,6 +230,14 @@ defmodule Urna do
 
       quote do
         verb(unquote(method), unquote(variable), do: unquote(body))
+      end
+    end
+
+    defmacro unquote(name)(variable, options, do: body) do
+      method = unquote(method)
+
+      quote do
+        verb(unquote(method), unquote(variable), unquote(options), do: unquote(body))
       end
     end
   end

@@ -1,5 +1,6 @@
 defmodule Test do
-  use Urna
+  use Urna, allow: [headers: true, methods: true, credentials: true],
+            adapters: [Urna.JSON, Urna.Form]
 
   namespace :foo do
     resource :bar do
@@ -8,11 +9,11 @@ defmodule Test do
       end
 
       get do
-        to_string(uri)
+        fail 500, "herp"
       end
 
-      get id do
-        if id != "42" do
+      get id, as: Integer do
+        if id != 42 do
           fail 406
         else
           [ id: id, name: "John" ]

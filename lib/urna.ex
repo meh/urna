@@ -404,7 +404,7 @@ defmodule Urna do
           accepted ->
             accepted
 
-          Seq.find accept, fn { "*/*", _ } -> true; _ -> false; end ->
+          Seq.find accept, &match?({ "*/*", _ }, &1) ->
             { nil, hd(adapters) }
 
           true ->

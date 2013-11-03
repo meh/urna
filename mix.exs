@@ -4,7 +4,7 @@ defmodule Urna.Mixfile do
   def project do
     [ app: :urna,
       version: "0.0.1",
-      elixir: "~> 0.10.4-dev",
+      elixir: "~> 0.11.0",
       deps: deps ]
   end
 

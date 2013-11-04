@@ -1,9 +1,9 @@
-[ "cauldron": {:git, "git://github.com/meh/cauldron.git", "c342d3688663305f80b6bc855e1223ee943d9a7f", []},
-  "datastructures": {:git, "git://github.com/meh/elixir-datastructures.git", "9b714be2528066ffc4ecf0f0932e91997fae5624", []},
-  "derp": {:git, "git://github.com/meh/derp.git", "6a2ebab02750b5526d84abb14db0f65c68088787", []},
-  "exts": {:git, "git://github.com/meh/exts.git", "16a26da86d2018e91297eea9c18214ddf09d8bb8", []},
+[ "cauldron": {:git, "git://github.com/meh/cauldron.git", "834e0818d498a3fc8527117ad8c6c0b9a7adabcb", []},
+  "datastructures": {:git, "git://github.com/meh/elixir-datastructures.git", "0b4c449f69f17c31d7bf280c910c774ed80802e1", []},
+  "derp": {:git, "git://github.com/meh/derp.git", "d4ec0f6a03ffae2014592c325e549ae908991417", []},
+  "exts": {:git, "git://github.com/meh/exts.git", "040adbb436622f7f00bee6d2b8c64645325b98e6", []},
   "finalizer": {:git, "git://github.com/meh/elixir-finalizer.git", "9c38d9145824a46c66f1a010e137a953a6c78e04", []},
-  "jazz": {:git, "git://github.com/meh/jazz.git", "21738bc137a643c1e47e855a471ed8a5150e7bcb", []},
-  "reagent": {:git, "git://github.com/meh/reagent.git", "71430acdd24ba40b5102029261ac7084c8d58661", []},
+  "jazz": {:git, "git://github.com/meh/jazz.git", "9e9dc1ac4950279f34a73843bfd4c579f05bbcff", []},
+  "reagent": {:git, "git://github.com/meh/reagent.git", "f179e278c2801130cd30f6396df3662575f1d83a", []},
   "resource": {:git, "git://github.com/tonyrog/resource.git", "b9e1adcadcc8cb59130e0bbecbbe6777bb8d7c78", []},
-  "socket": {:git, "git://github.com/meh/elixir-socket.git", "73eb1f836f6531b9125e8098c19c55d0bb9058ab", []} ]
+  "socket": {:git, "git://github.com/meh/elixir-socket.git", "66a88f0b13b1aeaef32c8de5543074f36f51b3f7", []} ]

@@ -70,7 +70,7 @@ defmodule Urna do
               name        -> name
             end) |> Seq.uniq
 
-            headers = prepare_headers(req.headers)
+            headers = Urna.Backend.headers(@allow, req.headers, @headers, [])
             headers = headers |> Dict.put("Access-Control-Allow-Methods", Seq.join(methods, ", "))
 
             req.reply(200, headers, "")
@@ -148,7 +148,7 @@ defmodule Urna do
         [method | endpoint]
       end)
 
-      def handle(unquote(method), URI.Info[path: @path] = uri, req) do
+      def handle(unquote(method), URI.Info[path: @path] = var!(uri, Urna), var!(req, Urna)) do
         body_to_response unquote(body)
       end
     end
@@ -162,7 +162,7 @@ defmodule Urna do
 
       @path endpoint_to_path(@endpoint)
 
-      def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(path)] = uri, req) do
+      def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(path)] = var!(uri, Urna), var!(req, Urna)) do
         body_to_response unquote(body)
       end
     end
@@ -195,19 +195,19 @@ defmodule Urna do
 
       case options[:as] do
         as when as in [nil, String] ->
-          def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(variable)] = uri, req) do
+          def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(variable)] = var!(uri, Urna), var!(req, Urna)) do
             body_to_response unquote(body)
           end
 
         Integer ->
-          def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(variable)] = uri, req) do
+          def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(variable)] = var!(uri, Urna), var!(req, Urna)) do
             unquote(variable) = unquote(variable) |> Integer.parse |> elem(0)
 
             body_to_response unquote(body)
           end
 
         Float ->
-          def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(variable)] = uri, req) do
+          def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(variable)] = var!(uri, Urna), var!(req, Urna)) do
             unquote(variable) = unquote(variable) |> Float.parse |> elem(0)
 
             body_to_response unquote(body)
@@ -250,187 +250,30 @@ defmodule Urna do
   @doc false
   defmacro body_to_response(body) do
     quote do
-      content = req.body
-      decoded = if content do
-        type    = req.headers["Content-Type"]
-        adapter = Seq.find @adapters, &(&1.accept?(type))
-
-        if adapter do
-          adapter.decode(type, content)
-        else
-          { :error, :unsupported_content_type }
-        end
-      else
-        { :ok, nil }
-      end
-
-      case decoded do
-        { :ok, __params__ } ->
-          __uri__ = uri
-
-          case unquote(body) do
-            { code } when code |> is_integer or code |> is_tuple  ->
-              req.reply(code, prepare_headers(req.headers), "")
-
-            { code, headers } when code |> is_integer or code |> is_tuple ->
-              req.reply(code, prepare_headers(req.headers, headers), "")
-
-            { code, headers, result } ->
-              case prepare_response(req.headers, result) do
-                { type, response } ->
-                  req.reply(code,
-                            prepare_headers(req.headers, Dict.put(headers, "Content-Type", type)),
-                            response)
-
-                nil ->
-                  req.reply(406, prepare_headers(req.headers, headers), "")
-              end
-
-            result ->
-              case prepare_response(req.headers, result) do
-                { type, response } ->
-                  req.reply(200,
-                            prepare_headers(req.headers, [{ "Content-Type", type }]),
-                            response)
-
-                nil ->
-                  req.reply(406, prepare_headers(req.headers), "")
-              end
-          end
+      case Urna.Backend.decode(var!(req, Urna), @adapters) do
+        { :ok, var!(params, Urna) } ->
+          Urna.Backend.ok(var!(req, Urna), unquote(body), @adapters, @allow, @headers)
 
         { :error, _ } ->
-          req.reply(406, prepare_headers(req.headers), "")
+          Urna.Backend.error(var!(req, Urna), @allow, @headers)
       end
-    end
-  end
-
-  defmacro prepare_headers(request) do
-    quote do
-      prepare_headers(@allow, unquote(request), @headers, [])
-    end
-  end
-
-  defmacro prepare_headers(request, user) do
-    quote do
-      prepare_headers(@allow, unquote(request), @headers, unquote(user))
-    end
-  end
-
-  def prepare_headers(allow, request, default, user) do
-    headers = Dict.merge(default, user)
-
-    if allow do
-      unless headers |> Dict.has_key?("Access-Control-Allow-Origin") do
-        case allow[:origins] do
-          nil ->
-            headers = headers |> Dict.put("Access-Control-Allow-Origin",
-              Dict.get(request, "Origin", "*"))
-
-          list when list |> is_list ->
-            origin = Dict.get(request, "Origin")
-
-            if Data.contains?(list, origin) do
-              headers = headers |> Dict.put("Access-Control-Allow-Origin", origin)
-            end
-        end
-      end
-
-      unless headers |> Dict.has_key?("Access-Control-Allow-Headers") do
-        case allow[:headers] do
-          true ->
-            headers = headers |> Dict.put("Access-Control-Allow-Headers",
-              Dict.get(request, "Access-Control-Request-Headers", "*"))
-
-          list when list |> is_list ->
-            headers = headers |> Dict.put("Access-Control-Allow-Headers", Seq.join(list, ", "))
-
-          _ ->
-            nil
-        end
-      end
-
-      unless headers |> Dict.has_key?("Access-Control-Allow-Methods") do
-        case allow[:methods] do
-          true ->
-            headers = headers |> Dict.put("Access-Control-Allow-Methods",
-              Dict.get(request, "Access-Control-Request-Method", "*"))
-
-          list when list |> is_list ->
-            headers = headers |> Dict.put("Access-Control-Allow-Methods", Seq.join(list, ", "))
-
-          _ ->
-            nil
-        end
-      end
-
-      unless headers |> Dict.has_key?("Access-Control-Allow-Credentials") do
-        if allow[:credentials] do
-          headers = headers |> Dict.put("Access-Control-Allow-Credentials", "true")
-        end
-      end
-    end
-
-    headers
-  end
-
-  defmacro prepare_response(request, result) do
-    quote do
-      prepare_response(@adapters, unquote(request), unquote(result))
-    end
-  end
-
-  def prepare_response(adapters, request, result) do
-    { mime, adapter } = case request["Accept"] do
-      nil ->
-        { nil, hd(adapters) }
-
-      [{ "*/*", _ }] ->
-        { nil, hd(adapters) }
-
-      [{ name, _ }] ->
-        { name, Seq.find(adapters, &(&1.accept?(name))) }
-
-      accept ->
-        accepted = accept |> Seq.group_by(&elem(&1, 1)) |> Seq.sort(&(elem(&1, 0) > elem(&2, 0)))
-          |> Seq.find_value(fn { _, types } ->
-            Seq.find_value types, fn { name, _ } ->
-              if adapter = Seq.find adapters, &(&1.accept?(name)) do
-                { name, adapter }
-              end
-            end
-          end)
-
-        cond do
-          accepted ->
-            accepted
-
-          Seq.find accept, &match?({ "*/*", _ }, &1) ->
-            { nil, hd(adapters) }
-
-          true ->
-            { nil, nil }
-        end
-    end
-
-    if adapter do
-      adapter.encode(mime, result)
     end
   end
 
   defmacro headers do
-    quote do: req.headers
+    quote do: var!(req, Urna).headers
   end
 
   defmacro params do
-    quote do: __params__
+    quote do: var!(params, Urna)
   end
 
   defmacro uri do
-    quote do: __uri__
+    quote do: var!(uri, Urna)
   end
 
   defmacro query do
-    quote do: URI.decode_query(__uri__.query, [])
+    quote do: URI.decode_query(var!(uri, Urna).query, [])
   end
 
   def reply(code) when code in 100 .. 399 do

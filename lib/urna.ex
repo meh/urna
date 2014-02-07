@@ -138,8 +138,8 @@ defmodule Urna do
       @path endpoint_to_path(@endpoint)
 
       if Seq.find(@endpoints[@path], fn
-        ^method -> true
-        _       -> false
+        meth when meth == method -> true
+        _                        -> false
       end) do
         raise ArgumentError, message: "#{method} already defined"
       end
@@ -183,8 +183,8 @@ defmodule Urna do
       @path endpoint_to_path(@endpoint)
 
       if Seq.find(@endpoints[@path], fn
-        { ^method, _ } -> true
-        _              -> false
+        { meth, _ } when meth == method -> true
+        _                               -> false
       end) do
         raise ArgumentError, message: "#{method}/#{id} already defined"
       end

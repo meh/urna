@@ -7,10 +7,6 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Urna do
-  alias Data.Stack
-  alias Data.Dict
-  alias Data.Seq
-
   def start(what, listener) do
     Cauldron.start what, listener
   end
@@ -44,8 +40,8 @@ defmodule Urna do
       @before_compile unquote(__MODULE__)
 
       @resource  false
-      @endpoint  Stack.Simple.new
-      @endpoints HashDict.new
+      @endpoint  []
+      @endpoints %{}
     end
   end
 
@@ -58,39 +54,43 @@ defmodule Urna do
   @doc false
   defmacro __before_compile__(_env) do
     quote do
-      def handle("OPTIONS", URI.Info[path: path], req) do
-        endpoint = Seq.find @endpoints, fn { endpoint, methods } ->
+      def handle("OPTIONS", %URI{path: path}, req) do
+        alias Cauldron.Request, as: R
+
+        endpoint = Enum.find @endpoints, fn { endpoint, methods } ->
           path |> String.starts_with? endpoint
         end
 
         if endpoint do
           if @allow do
-            methods = Seq.map(elem(endpoint, 1), fn
+            methods = Enum.map(elem(endpoint, 1), fn
               { name, _ } -> name
               name        -> name
-            end) |> Seq.uniq
+            end) |> Enum.uniq
 
-            headers = Urna.Backend.headers(@allow, req.headers, @headers, [])
-            headers = headers |> Dict.put("Access-Control-Allow-Methods", Seq.join(methods, ", "))
+            headers = Urna.Backend.headers(@allow, req |> R.headers, @headers, [])
+            headers = headers |> Dict.put("Access-Control-Allow-Methods", Enum.join(methods, ", "))
 
-            req.reply(200, headers, "")
+            req |> R.reply(200, headers, "")
           else
-            req.reply(405)
+            req |> R.reply(405)
           end
         else
-          req.reply(404)
+          req |> R.reply(404)
         end
       end
 
-      def handle(_, URI.Info[path: path], req) do
-        endpoint = Seq.find @endpoints, fn { endpoint, methods } ->
+      def handle(_, %URI{path: path}, req) do
+        alias Cauldron.Request, as: R
+
+        endpoint = Enum.find @endpoints, fn { endpoint, methods } ->
           path |> String.starts_with? endpoint
         end
 
         if endpoint do
-          req.reply(405)
+          req |> R.reply(405)
         else
-          req.reply(404)
+          req |> R.reply(404)
         end
       end
 
@@ -106,25 +106,25 @@ defmodule Urna do
         raise ArgumentError, message: "cannot nest a namespace in a resource"
       end
 
-      @endpoint Stack.push(@endpoint, to_string(unquote(name)))
+      @endpoint [to_string(unquote(name)) | @endpoint]
 
       unquote(body)
 
-      @endpoint Stack.pop(@endpoint) |> elem(1)
+      @endpoint tl(@endpoint)
     end
   end
 
   defmacro resource(name, do: body) do
     quote do
       @resource true
-      @endpoint Stack.push(@endpoint, to_string(unquote(name)))
+      @endpoint [to_string(unquote(name)) | @endpoint]
 
       @path endpoint_to_path(@endpoint)
       @endpoints Dict.put(@endpoints, @path, [])
 
       unquote(body)
 
-      @endpoint Stack.pop(@endpoint) |> elem(1)
+      @endpoint tl(@endpoint)
       @resource false
     end
   end
@@ -137,18 +137,18 @@ defmodule Urna do
 
       @path endpoint_to_path(@endpoint)
 
-      if Seq.find(@endpoints[@path], fn
+      if Enum.find(@endpoints[@path], fn
         meth when meth == method -> true
         _                        -> false
       end) do
         raise ArgumentError, message: "#{method} already defined"
       end
 
-      @endpoints Dict.update(@endpoints, @path, fn endpoint ->
+      @endpoints Dict.update!(@endpoints, @path, fn endpoint ->
         [method | endpoint]
       end)
 
-      def handle(unquote(method), URI.Info[path: @path] = var!(uri, Urna), var!(req, Urna)) do
+      def handle(unquote(method), %URI{path: @path} = var!(uri, Urna), var!(req, Urna)) do
         body_to_response unquote(body)
       end
     end
@@ -162,7 +162,7 @@ defmodule Urna do
 
       @path endpoint_to_path(@endpoint)
 
-      def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(path)] = var!(uri, Urna), var!(req, Urna)) do
+      def handle(unquote(method), %URI{path: @path <> "/" <> unquote(path)} = var!(uri, Urna), var!(req, Urna)) do
         body_to_response unquote(body)
       end
     end
@@ -182,32 +182,32 @@ defmodule Urna do
 
       @path endpoint_to_path(@endpoint)
 
-      if Seq.find(@endpoints[@path], fn
+      if Enum.find(@endpoints[@path], fn
         { meth, _ } when meth == method -> true
         _                               -> false
       end) do
         raise ArgumentError, message: "#{method}/#{id} already defined"
       end
 
-      @endpoints Dict.update(@endpoints, @path, fn endpoint ->
+      @endpoints Dict.update!(@endpoints, @path, fn endpoint ->
         [{ method, id } | endpoint]
       end)
 
       case options[:as] do
         as when as in [nil, String] ->
-          def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(variable)] = var!(uri, Urna), var!(req, Urna)) do
+          def handle(unquote(method), %URI{path: @path <> "/" <> unquote(variable)} = var!(uri, Urna), var!(req, Urna)) do
             body_to_response unquote(body)
           end
 
         Integer ->
-          def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(variable)] = var!(uri, Urna), var!(req, Urna)) do
+          def handle(unquote(method), %URI{path: @path <> "/" <> unquote(variable)} = var!(uri, Urna), var!(req, Urna)) do
             unquote(variable) = unquote(variable) |> Integer.parse |> elem(0)
 
             body_to_response unquote(body)
           end
 
         Float ->
-          def handle(unquote(method), URI.Info[path: @path <> "/" <> unquote(variable)] = var!(uri, Urna), var!(req, Urna)) do
+          def handle(unquote(method), %URI{path: @path <> "/" <> unquote(variable)} = var!(uri, Urna), var!(req, Urna)) do
             unquote(variable) = unquote(variable) |> Float.parse |> elem(0)
 
             body_to_response unquote(body)
@@ -216,7 +216,7 @@ defmodule Urna do
     end
   end
 
-  Seq.each @verbs, fn { name, method } ->
+  Enum.each @verbs, fn { name, method } ->
     defmacro unquote(name)(do: body) do
       method = unquote(method)
 
@@ -244,7 +244,7 @@ defmodule Urna do
 
   @doc false
   def endpoint_to_path(stack) do
-    "/" <> (Data.to_list(stack) |> Data.reverse |> Seq.join("/"))
+    "/" <> (stack |> Enum.reverse |> Enum.join("/"))
   end
 
   @doc false

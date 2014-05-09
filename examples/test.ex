@@ -32,3 +32,5 @@ defmodule Test do
     end
   end
 end
+
+# c("examples/test.ex"); Urna.start Test, port: 8080

@@ -1,11 +1,10 @@
 defmodule Urna.Backend do
-  alias Data.Seq
-  alias Data.Dict
+  alias Cauldron.Request, as: R
 
   def decode(req, adapters) do
-    type    = req.headers["Content-Type"]
-    adapter = Seq.find adapters, &(&1.accept?(type))
-    body    = req.body
+    type    = req |> R.headers |> Dict.get "Content-Type"
+    adapter = Enum.find adapters, &(&1.accept?(type))
+    body    = req |> R.body
 
     cond do
       adapter && body ->
@@ -20,7 +19,7 @@ defmodule Urna.Backend do
   end
 
   def headers(allow, request, default, user) do
-    headers = Dict.merge(default, user)
+    headers = Dict.merge(default, user) |> Enum.into(Cauldron.Headers.new)
 
     if allow do
       unless headers |> Dict.has_key?("Access-Control-Allow-Origin") do
@@ -32,7 +31,7 @@ defmodule Urna.Backend do
           list when list |> is_list ->
             origin = Dict.get(request, "Origin")
 
-            if Data.contains?(list, origin) do
+            if Enum.member?(list, origin) do
               headers = headers |> Dict.put("Access-Control-Allow-Origin", origin)
             end
         end
@@ -45,7 +44,7 @@ defmodule Urna.Backend do
               Dict.get(request, "Access-Control-Request-Headers", "*"))
 
           list when list |> is_list ->
-            headers = headers |> Dict.put("Access-Control-Allow-Headers", Seq.join(list, ", "))
+            headers = headers |> Dict.put("Access-Control-Allow-Headers", Enum.join(list, ", "))
 
           _ ->
             nil
@@ -59,7 +58,7 @@ defmodule Urna.Backend do
               Dict.get(request, "Access-Control-Request-Method", "*"))
 
           list when list |> is_list ->
-            headers = headers |> Dict.put("Access-Control-Allow-Methods", Seq.join(list, ", "))
+            headers = headers |> Dict.put("Access-Control-Allow-Methods", Enum.join(list, ", "))
 
           _ ->
             nil
@@ -85,13 +84,13 @@ defmodule Urna.Backend do
         { nil, hd(adapters) }
 
       [{ name, _ }] ->
-        { name, Seq.find(adapters, &(&1.accept?(name))) }
+        { name, Enum.find(adapters, &(&1.accept?(name))) }
 
       accept ->
-        accepted = accept |> Seq.group_by(&elem(&1, 1)) |> Seq.sort(&(elem(&1, 0) > elem(&2, 0)))
-          |> Seq.find_value(fn { _, types } ->
-            Seq.find_value types, fn { name, _ } ->
-              if adapter = Seq.find adapters, &(&1.accept?(name)) do
+        accepted = accept |> Enum.group_by(&elem(&1, 1)) |> Enum.sort(&(elem(&1, 0) > elem(&2, 0)))
+          |> Enum.find_value(fn { _, types } ->
+            Enum.find_value types, fn { name, _ } ->
+              if adapter = Enum.find adapters, &(&1.accept?(name)) do
                 { name, adapter }
               end
             end
@@ -101,7 +100,7 @@ defmodule Urna.Backend do
           accepted ->
             accepted
 
-          Seq.find accept, &match?({ "*/*", _ }, &1) ->
+          Enum.find accept, &match?({ "*/*", _ }, &1) ->
             { nil, hd(adapters) }
 
           true ->
@@ -117,36 +116,36 @@ defmodule Urna.Backend do
   def ok(req, res, adapters!, allow!, headers!) do
     case res do
       { code } when code |> is_integer or code |> is_tuple  ->
-        req.reply(code, headers(allow!, req.headers, headers!, []), "")
+        req |> R.reply(code, headers(allow!, req |> R.headers, headers!, []), "")
 
       { code, headers } when code |> is_integer or code |> is_tuple ->
-        req.reply(code, headers(allow!, req.headers, headers!, headers), "")
+        req |> R.reply(code, headers(allow!, req |> R.headers, headers!, headers), "")
 
       { code, headers, result } ->
-        case response(adapters!, req.headers, result) do
+        case response(adapters!, req |> R.headers, result) do
           { type, response } ->
-            req.reply(code,
-              headers(allow!, req.headers, headers!, Dict.put(headers, "Content-Type", type)),
+            req |> R.reply(code,
+              headers(allow!, req |> R.headers, headers!, Dict.put(headers, "Content-Type", type)),
               response)
 
           nil ->
-            req.reply(406, headers(allow!, req.headers, headers!, headers), "")
+            req |> R.reply(406, headers(allow!, req |> R.headers, headers!, headers), "")
         end
 
       result ->
-        case response(adapters!, req.headers, result) do
+        case response(adapters!, req |> R.headers, result) do
           { type, response } ->
-            req.reply(200,
-              headers(allow!, req.headers, headers!, [{ "Content-Type", type }]),
+            req |> R.reply(200,
+              headers(allow!, req |> R.headers, headers!, [{ "Content-Type", type }]),
               response)
 
           nil ->
-            req.reply(406, headers(allow!, req.headers, headers!, []), "")
+            req |> R.reply(406, headers(allow!, req |> R.headers, headers!, []), "")
         end
     end
   end
 
   def error(req, allow!, headers!) do
-    req.reply(406, headers(allow!, req.headers, headers!, []), "")
+    req |> R.reply(406, headers(allow!, req |> R.headers, headers!, []), "")
   end
 end

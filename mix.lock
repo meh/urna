@@ -1,5 +1,5 @@
-%{"cauldron": {:git, "git://github.com/meh/cauldron.git", "6d1afcdc1f63c110ce11570bf26e9550ada2528c", []},
-  "exts": {:package, "0.1.0"},
+%{"cauldron": {:package, "0.1.0"},
+  "exts": {:package, "0.1.1"},
   "jazz": {:package, "0.1.0"},
-  "reagent": {:git, "git://github.com/meh/reagent.git", "4c78071628da0b247567e54aea838b1401112dd0", []},
-  "socket": {:package, "0.2.0"}}
+  "reagent": {:package, "0.1.1"},
+  "socket": {:package, "0.2.2"}}

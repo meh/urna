@@ -16,7 +16,7 @@ defmodule Test do
         if id != 42 do
           fail 406
         else
-          [ id: id, name: "John" ]
+          %{id: id, name: "John"}
         end
       end
 

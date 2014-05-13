@@ -33,7 +33,7 @@ defmodule Urna do
     quote do
       import Urna
 
-      @headers  unquote(opts[:headers]) || []
+      @headers  unquote(opts[:headers]) || %{}
       @allow    unquote(opts[:allow]) || false
       @adapters unquote(opts[:adapters]) || [Urna.JSON]
 

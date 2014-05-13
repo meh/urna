@@ -116,7 +116,7 @@ defmodule Urna.Backend do
   def ok(req, res, adapters!, allow!, headers!) do
     case res do
       { code } when code |> is_integer or code |> is_tuple  ->
-        req |> R.reply(code, headers(allow!, req |> R.headers, headers!, []), "")
+        req |> R.reply(code, headers(allow!, req |> R.headers, headers!, %{}), "")
 
       { code, headers } when code |> is_integer or code |> is_tuple ->
         req |> R.reply(code, headers(allow!, req |> R.headers, headers!, headers), "")
@@ -136,16 +136,16 @@ defmodule Urna.Backend do
         case response(adapters!, req |> R.headers, result) do
           { type, response } ->
             req |> R.reply(200,
-              headers(allow!, req |> R.headers, headers!, [{ "Content-Type", type }]),
+              headers(allow!, req |> R.headers, headers!, %{"Content-Type" => type}),
               response)
 
           nil ->
-            req |> R.reply(406, headers(allow!, req |> R.headers, headers!, []), "")
+            req |> R.reply(406, headers(allow!, req |> R.headers, headers!, %{}), "")
         end
     end
   end
 
   def error(req, allow!, headers!) do
-    req |> R.reply(406, headers(allow!, req |> R.headers, headers!, []), "")
+    req |> R.reply(406, headers(allow!, req |> R.headers, headers!, %{}), "")
   end
 end

@@ -1,5 +1,6 @@
 defmodule Urna.JSON do
   use Urna.Adapter
+  use Jazz
 
   def accept?("application/json"), do: true
   def accept?(_),                  do: false

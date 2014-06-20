@@ -31,6 +31,7 @@ defmodule Urna do
   """
   defmacro __using__(opts) do
     quote do
+      use Cauldron
       import Urna
 
       @headers  unquote(opts[:headers]) || %{}

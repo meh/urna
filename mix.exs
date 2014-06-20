@@ -3,8 +3,8 @@ defmodule Urna.Mixfile do
 
   def project do
     [ app: :urna,
-      version: "0.1.0",
-      elixir: "~> 0.13.2",
+      version: "0.1.1",
+      elixir: "~> 0.14.1",
       deps: deps,
       package: package,
       description: "REST in peace" ]
@@ -21,7 +21,7 @@ defmodule Urna.Mixfile do
   end
 
   defp deps do
-    [ { :cauldron, "~> 0.1.0" },
-      { :jazz, "~> 0.1.0" } ]
+    [ { :cauldron, "~> 0.1.2" },
+      { :jazz, "~> 0.1.2" } ]
   end
 end

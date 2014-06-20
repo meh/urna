@@ -20,7 +20,7 @@ defmodule Test do
         end
       end
 
-      put id do
+      put _id do
         params["name"]
       end
     end

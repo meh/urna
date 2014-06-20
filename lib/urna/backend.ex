@@ -1,10 +1,11 @@
 defmodule Urna.Backend do
-  alias Cauldron.Request, as: R
+  alias HTTProt.Headers
+  alias Cauldron.Request
 
   def decode(req, adapters) do
-    type    = req |> R.headers |> Dict.get "Content-Type"
+    type    = req |> Request.headers |> Dict.get "Content-Type"
     adapter = Enum.find adapters, &(&1.accept?(type))
-    body    = req |> R.body
+    body    = req |> Request.body
 
     cond do
       adapter && body ->
@@ -19,7 +20,7 @@ defmodule Urna.Backend do
   end
 
   def headers(allow, request, default, user) do
-    headers = Dict.merge(default, user) |> Enum.into(Cauldron.Headers.new)
+    headers = Dict.merge(default, user) |> Enum.into(Headers.new)
 
     if allow do
       unless headers |> Dict.has_key?("Access-Control-Allow-Origin") do
@@ -116,36 +117,36 @@ defmodule Urna.Backend do
   def ok(req, res, adapters!, allow!, headers!) do
     case res do
       { code } when code |> is_integer or code |> is_tuple  ->
-        req |> R.reply(code, headers(allow!, req |> R.headers, headers!, %{}), "")
+        req |> Request.reply(code, headers(allow!, req |> Request.headers, headers!, %{}), "")
 
       { code, headers } when code |> is_integer or code |> is_tuple ->
-        req |> R.reply(code, headers(allow!, req |> R.headers, headers!, headers), "")
+        req |> Request.reply(code, headers(allow!, req |> Request.headers, headers!, headers), "")
 
       { code, headers, result } ->
-        case response(adapters!, req |> R.headers, result) do
+        case response(adapters!, req |> Request.headers, result) do
           { type, response } ->
-            req |> R.reply(code,
-              headers(allow!, req |> R.headers, headers!, Dict.put(headers, "Content-Type", type)),
+            req |> Request.reply(code,
+              headers(allow!, req |> Request.headers, headers!, Dict.put(headers, "Content-Type", type)),
               response)
 
           nil ->
-            req |> R.reply(406, headers(allow!, req |> R.headers, headers!, headers), "")
+            req |> Request.reply(406, headers(allow!, req |> Request.headers, headers!, headers), "")
         end
 
       result ->
-        case response(adapters!, req |> R.headers, result) do
+        case response(adapters!, req |> Request.headers, result) do
           { type, response } ->
-            req |> R.reply(200,
-              headers(allow!, req |> R.headers, headers!, %{"Content-Type" => type}),
+            req |> Request.reply(200,
+              headers(allow!, req |> Request.headers, headers!, %{"Content-Type" => type}),
               response)
 
           nil ->
-            req |> R.reply(406, headers(allow!, req |> R.headers, headers!, %{}), "")
+            req |> Request.reply(406, headers(allow!, req |> Request.headers, headers!, %{}), "")
         end
     end
   end
 
   def error(req, allow!, headers!) do
-    req |> R.reply(406, headers(allow!, req |> R.headers, headers!, %{}), "")
+    req |> Request.reply(406, headers(allow!, req |> Request.headers, headers!, %{}), "")
   end
 end

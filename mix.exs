@@ -3,8 +3,8 @@ defmodule Urna.Mixfile do
 
   def project do
     [ app: :urna,
-      version: "0.1.2",
-      elixir: "~> 0.15.0",
+      version: "0.1.3",
+      elixir: "~> 1.0.0-rc1",
       deps: deps,
       package: package,
       description: "REST in peace" ]

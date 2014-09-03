@@ -13,10 +13,15 @@ defmodule Test do
       end
 
       get id, as: Integer do
-        if id != 42 do
-          fail 406
-        else
-          %{id: id, name: "John"}
+        case id do
+          42 ->
+            %{id: id, name: "John"}
+
+          23 ->
+            { Jazz.encode! %{id: id, name: "Richard"} }
+
+          true ->
+            fail 406
         end
       end
 

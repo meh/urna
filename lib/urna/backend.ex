@@ -116,13 +116,22 @@ defmodule Urna.Backend do
 
   def ok(req, res, adapters!, allow!, headers!) do
     case res do
+      { result } when result |> is_binary ->
+        req |> Request.reply(200, headers(allow!, req |> Request.headers, headers!, %{}), result)
+
+      { code, result } when (code |> is_integer or code |> is_tuple) and result |> is_binary ->
+        req |> Request.reply(code, headers(allow!, req |> Request.headers, headers!, %{}), result)
+
+      { code, headers, result } when (code |> is_integer or code |> is_tuple) and result |> is_binary ->
+        req |> Request.reply(code, headers(allow!, req |> Request.headers, headers!, headers), result)
+
       { code } when code |> is_integer or code |> is_tuple  ->
         req |> Request.reply(code, headers(allow!, req |> Request.headers, headers!, %{}), "")
 
       { code, headers } when code |> is_integer or code |> is_tuple ->
         req |> Request.reply(code, headers(allow!, req |> Request.headers, headers!, headers), "")
 
-      { code, headers, result } ->
+      { code, headers, result } when code |> is_integer or code |> is_tuple ->
         case response(adapters!, req |> Request.headers, result) do
           { type, response } ->
             req |> Request.reply(code,

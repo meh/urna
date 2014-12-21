@@ -156,3 +156,32 @@ end
 
 This example will allow all methods, headers and HTTP credentials, check the
 documentation for more information.
+
+
+Deploying on Heroku
+-------------------
+
+Give an app (mix is required):
+
+```elixir
+defmodule TestApp do
+  use Urna
+
+  resource "" do: "hello world!"
+end
+```
+
+
+Create an app with the elixir buildpack:
+
+    heroku create --buildpack https://github.com/HashNuke/heroku-buildpack-elixir.git
+
+
+Add a `Procfile` with the following line:
+
+    web: mix run -e "{:ok,_} = Urna.start TestApp, port: ${PORT:-3000}" --no-halt
+
+
+Push the app to deploy it:
+
+    git push heroku master

@@ -115,7 +115,7 @@ defmodule Urna do
     end
   end
 
-  defmacro resource(name, do: body) do
+  defmacro resource(name \\ "", do: body) do
     quote do
       @resource true
       @endpoint [to_string(unquote(name)) | @endpoint]

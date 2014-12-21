@@ -1,6 +1,6 @@
-%{"cauldron": {:package, "0.1.5"},
-  "exts": {:package, "0.2.2"},
-  "httprot": {:package, "0.1.5"},
-  "jazz": {:package, "0.2.1"},
-  "reagent": {:package, "0.1.5"},
-  "socket": {:package, "0.2.8"}}
+%{"cauldron": {:hex, :cauldron, "0.1.5"},
+  "exts": {:hex, :exts, "0.2.2"},
+  "httprot": {:hex, :httprot, "0.1.5"},
+  "jazz": {:hex, :jazz, "0.2.1"},
+  "reagent": {:hex, :reagent, "0.1.5"},
+  "socket": {:hex, :socket, "0.2.8"}}

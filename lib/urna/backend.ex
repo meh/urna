@@ -3,9 +3,12 @@ defmodule Urna.Backend do
   alias Cauldron.Request
 
   def decode(req, adapters) do
-    type    = req |> Request.headers |> Dict.get "Content-Type"
-    adapter = Enum.find adapters, &(&1.accept?(type))
-    body    = req |> Request.body
+    [type|_] = req
+      |> Request.headers
+      |> Dict.get("Content-Type")
+      |> String.split("; ")
+    adapter   = Enum.find adapters, &(&1.accept?(type))
+    body      = req |> Request.body
 
     cond do
       adapter && body ->

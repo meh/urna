@@ -69,7 +69,7 @@ defmodule Urna do
               name        -> name
             end) |> Enum.uniq
 
-            headers = Urna.Backend.headers(@allow, req |> R.headers, @headers, [])
+            headers = Urna.Backend.headers(@allow, req |> R.headers, @headers, %{})
             headers = headers |> Dict.put("Access-Control-Allow-Methods", Enum.join(methods, ", "))
 
             req |> R.reply(200, headers, "")
@@ -274,7 +274,7 @@ defmodule Urna do
   end
 
   defmacro query do
-    quote do: URI.decode_query(var!(uri, Urna).query, [])
+    quote do: URI.decode_query(var!(uri, Urna).query)
   end
 
   def reply(code) when code in 100 .. 399 do
@@ -290,7 +290,7 @@ defmodule Urna do
   end
 
   def reply(result, code) when code in 100 .. 399 do
-    { code, [], result }
+    { code, %{}, result }
   end
 
   def reply(code, text, headers) when code in 100 .. 399 and text |> is_binary do
@@ -298,7 +298,7 @@ defmodule Urna do
   end
 
   def reply(result, code, text) when code in 100 .. 399 and text |> is_binary do
-    { { code, text }, [], result }
+    { { code, text }, %{}, result }
   end
 
   def reply(result, code, headers) when code in 100 .. 399 do
@@ -322,7 +322,7 @@ defmodule Urna do
   end
 
   def fail(result, code) when code in 400 .. 599 do
-    { code, [], result }
+    { code, %{}, result }
   end
 
   def fail(code, text, headers) when code in 400 .. 599 and text |> is_binary do
@@ -330,7 +330,7 @@ defmodule Urna do
   end
 
   def fail(result, code, text) when code in 400 .. 599 and text |> is_binary do
-    { { code, text }, [], result }
+    { { code, text }, %{}, result }
   end
 
   def fail(result, code, headers) when code in 400 .. 599 do

@@ -9,6 +9,6 @@ defmodule Urna.Form do
   end
 
   def decode(_, string) do
-    { :ok, URI.decode_query(string, []) }
+    { :ok, URI.decode_query(string) }
   end
 end

@@ -5,7 +5,7 @@ defmodule Urna.Backend do
   def decode(req, adapters) do
     [type|_] = req
       |> Request.headers
-      |> Dict.get("Content-Type")
+      |> Dict.get("Content-Type", "")
       |> String.split("; ")
     adapter   = Enum.find adapters, &(&1.accept?(type))
     body      = req |> Request.body

@@ -167,7 +167,7 @@ Give an app (mix is required):
 defmodule TestApp do
   use Urna
 
-  resource "" do: "hello world!"
+  resource "", do: "hello world!"
 end
 ```
 

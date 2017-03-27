@@ -46,6 +46,8 @@ defmodule Urna do
     end
   end
 
+  use Data
+
   @verbs head:   "HEAD",
          get:    "GET",
          post:   "POST",
@@ -59,7 +61,7 @@ defmodule Urna do
         alias Cauldron.Request, as: R
 
         endpoint = Enum.find @endpoints, fn { endpoint, methods } ->
-          path |> String.starts_with? endpoint
+          path |> String.starts_with?(endpoint)
         end
 
         if endpoint do
@@ -85,7 +87,7 @@ defmodule Urna do
         alias Cauldron.Request, as: R
 
         endpoint = Enum.find @endpoints, fn { endpoint, methods } ->
-          path |> String.starts_with? endpoint
+          path |> String.starts_with?(endpoint)
         end
 
         if endpoint do
@@ -145,7 +147,7 @@ defmodule Urna do
         raise ArgumentError, message: "#{method} already defined"
       end
 
-      @endpoints Dict.update!(@endpoints, @path, fn endpoint ->
+      @endpoints Dict.update(@endpoints, @path, fn endpoint ->
         [method | endpoint]
       end)
 
@@ -190,7 +192,7 @@ defmodule Urna do
         raise ArgumentError, message: "#{method}/#{id} already defined"
       end
 
-      @endpoints Dict.update!(@endpoints, @path, fn endpoint ->
+      @endpoints Dict.update(@endpoints, @path, fn endpoint ->
         [{ method, id } | endpoint]
       end)
 
@@ -265,8 +267,17 @@ defmodule Urna do
     quote do: var!(req, Urna).headers
   end
 
+  defmacro header(name) do
+    quote do: var!(req, Urna).headers |> Data.Dict.get(unquote(name))
+  end
+
+
   defmacro params do
     quote do: var!(params, Urna)
+  end
+
+  defmacro param(name) do
+    quote do: var!(params, Urna)[unquote(name)]
   end
 
   defmacro uri do

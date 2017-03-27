@@ -1,14 +1,17 @@
 defmodule Urna.Backend do
+  use Data
+
   alias HTTProt.Headers
   alias Cauldron.Request
 
   def decode(req, adapters) do
-    [type|_] = req
+    [type | _] = req
       |> Request.headers
       |> Dict.get("Content-Type", "")
       |> String.split("; ")
-    adapter   = Enum.find adapters, &(&1.accept?(type))
-    body      = req |> Request.body
+
+    adapter = Enum.find adapters, &(&1.accept?(type))
+    body    = req |> Request.body
 
     cond do
       adapter && body ->
@@ -26,57 +29,73 @@ defmodule Urna.Backend do
     headers = Dict.merge(default, user) |> Enum.into(Headers.new)
 
     if allow do
-      unless headers |> Dict.has_key?("Access-Control-Allow-Origin") do
+      headers = unless headers |> Dict.has_key?("Access-Control-Allow-Origin") do
         case allow[:origins] do
           nil ->
-            headers = headers |> Dict.put("Access-Control-Allow-Origin",
+            headers |> Dict.put("Access-Control-Allow-Origin",
               Dict.get(request, "Origin", "*"))
 
           list when list |> is_list ->
             origin = Dict.get(request, "Origin")
 
             if Enum.member?(list, origin) do
-              headers = headers |> Dict.put("Access-Control-Allow-Origin", origin)
+              headers |> Dict.put("Access-Control-Allow-Origin", origin)
+            else
+              headers
             end
+
+          _ ->
+            headers
         end
+      else
+        headers
       end
 
-      unless headers |> Dict.has_key?("Access-Control-Allow-Headers") do
+      headers = unless headers |> Dict.has_key?("Access-Control-Allow-Headers") do
         case allow[:headers] do
           true ->
-            headers = headers |> Dict.put("Access-Control-Allow-Headers",
+            headers |> Dict.put("Access-Control-Allow-Headers",
               Dict.get(request, "Access-Control-Request-Headers", "*"))
 
           list when list |> is_list ->
-            headers = headers |> Dict.put("Access-Control-Allow-Headers", Enum.join(list, ", "))
+            headers |> Dict.put("Access-Control-Allow-Headers",
+              Enum.join(list, ", "))
 
           _ ->
-            nil
+            headers
         end
+      else
+        headers
       end
 
-      unless headers |> Dict.has_key?("Access-Control-Allow-Methods") do
+      headers = unless headers |> Dict.has_key?("Access-Control-Allow-Methods") do
         case allow[:methods] do
           true ->
-            headers = headers |> Dict.put("Access-Control-Allow-Methods",
+            headers |> Dict.put("Access-Control-Allow-Methods",
               Dict.get(request, "Access-Control-Request-Method", "*"))
 
           list when list |> is_list ->
-            headers = headers |> Dict.put("Access-Control-Allow-Methods", Enum.join(list, ", "))
+            headers |> Dict.put("Access-Control-Allow-Methods", Enum.join(list, ", "))
 
           _ ->
-            nil
+            headers
         end
+      else
+        headers
       end
 
-      unless headers |> Dict.has_key?("Access-Control-Allow-Credentials") do
+      headers = unless headers |> Dict.has_key?("Access-Control-Allow-Credentials") do
         if allow[:credentials] do
-          headers = headers |> Dict.put("Access-Control-Allow-Credentials", "true")
+          headers |> Dict.put("Access-Control-Allow-Credentials", "true")
+        else
+          headers
         end
       end
-    end
 
-    headers
+      headers
+    else
+      headers
+    end
   end
 
   def response(adapters, request, result) do

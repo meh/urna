@@ -1,11 +1,12 @@
 defmodule Test do
-  use Urna, allow: [headers: true, methods: true, credentials: true],
-            adapters: [Urna.JSON, Urna.Form]
+  use Urna,
+    allow:    [headers: true, methods: true, credentials: true],
+    adapters: [Urna.JSON, Urna.Form]
 
   namespace :foo do
     resource :bar do
       post do
-        params["id"]
+        param("id")
       end
 
       get do
@@ -26,7 +27,7 @@ defmodule Test do
       end
 
       put _id do
-        params["name"]
+        param("name")
       end
     end
   end

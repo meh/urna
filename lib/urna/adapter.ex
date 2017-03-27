@@ -5,13 +5,11 @@ defmodule Urna.Adapter do
     end
   end
 
-  use Behaviour
+  @callback accept?(mime_type :: String.t) :: boolean
 
-  defcallback accept?(mime_type :: String.t) :: boolean
-
-  defcallback encode(mime_type :: String.t, term)
+  @callback encode(mime_type :: String.t, term)
     :: { mime_type :: String.t, encoded :: String.t }
 
-  defcallback decode(mime_type :: String.t, String.t)
+  @callback decode(mime_type :: String.t, String.t)
     :: { :ok, decoded :: term } | { :error, reason :: term }
 end

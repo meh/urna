@@ -16,12 +16,12 @@ defmodule Urna.Mixfile do
   end
 
   def application do
-    [ applications: [:cauldron, :jazz] ]
+    [ applications: [:cauldron, :poison] ]
   end
 
   defp deps do
     [ { :cauldron, "~> 0.1" },
-      { :jazz,     "~> 0.2" },
+      { :poison,   "~> 3.0" },
       { :ex_doc,   "~> 0.14", only: [:dev] } ]
   end
 end

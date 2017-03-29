@@ -19,7 +19,7 @@ defmodule Test do
             %{id: id, name: "John"}
 
           23 ->
-            { Jazz.encode! %{id: id, name: "Richard"} }
+            { Poison.encode! %{id: id, name: "Richard"} }
 
           true ->
             fail 406

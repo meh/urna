@@ -5,5 +5,6 @@
   "exts": {:hex, :exts, "0.3.4", "ec2af096ab4494c087a9615fffe9d5ba8a0fa0ccc465b340ee522ed7aff79078", [:mix], [{:datastructures, "~> 0.2", [hex: :datastructures, optional: false]}]},
   "httprot": {:hex, :httprot, "0.1.10", "7dc1b36c29cf901ddac073fe1ba05f425de6ac749b6ae59ffaf40b1be4283002", [:mix], [{:datastructures, "~> 0.2", [hex: :datastructures, optional: false]}, {:socket, "~> 0.3", [hex: :socket, optional: false]}]},
   "jazz": {:hex, :jazz, "0.2.1", "46cf8ed1bd8f02441d7870aae052c7dc0adcb722d7585c2f8824b30c4c34d100", [:mix], []},
+  "poison": {:hex, :poison, "3.1.0", "d9eb636610e096f86f25d9a46f35a9facac35609a7591b3be3326e99a0484665", [:mix], []},
   "reagent": {:hex, :reagent, "0.1.14", "f6eaa35266091a41c93ae18b510472fa7c931c1f67a030d213ab0206ace843e1", [:mix], [{:exts, "~> 0.3", [hex: :exts, optional: false]}, {:socket, "~> 0.3", [hex: :socket, optional: false]}]},
-  "socket": {:hex, :socket, "0.3.10", "a615c308e681de78595ec98189a27aa2ef9b0fe8ce400c560d8185b366f13eae", [:mix], []}}
+  "socket": {:hex, :socket, "0.3.11", "46004230045c2207c0b90adb9abe3ba15a83e634b341ac37af39a4adf48ed00b", [:mix], []}}

@@ -1,7 +1,7 @@
 %{"cauldron": {:hex, :cauldron, "0.1.7", "b5e41b4f60df1930a803d4e47ce8af281c5be2e99fad543a70b9fcb2b9e70629", [:mix], [{:datastructures, "~> 0.2", [hex: :datastructures, optional: false]}, {:httprot, "~> 0.1", [hex: :httprot, optional: false]}, {:reagent, "~> 0.1", [hex: :reagent, optional: false]}]},
   "datastructures": {:hex, :datastructures, "0.2.8", "cd9f53bed18f1d9526689a9559676c682b5a3ba230c1e3de187182f4ff86899c", [:mix], []},
   "earmark": {:hex, :earmark, "1.2.0", "bf1ce17aea43ab62f6943b97bd6e3dc032ce45d4f787504e3adf738e54b42f3a", [:mix], []},
-  "ex_doc": {:hex, :ex_doc, "0.15.0", "e73333785eef3488cf9144a6e847d3d647e67d02bd6fdac500687854dd5c599f", [:mix], [{:earmark, "~> 1.1", [hex: :earmark, optional: false]}]},
+  "ex_doc": {:hex, :ex_doc, "0.15.1", "d5f9d588fd802152516fccfdb96d6073753f77314fcfee892b15b6724ca0d596", [:mix], [{:earmark, "~> 1.1", [hex: :earmark, optional: false]}]},
   "exts": {:hex, :exts, "0.3.4", "ec2af096ab4494c087a9615fffe9d5ba8a0fa0ccc465b340ee522ed7aff79078", [:mix], [{:datastructures, "~> 0.2", [hex: :datastructures, optional: false]}]},
   "httprot": {:hex, :httprot, "0.1.10", "7dc1b36c29cf901ddac073fe1ba05f425de6ac749b6ae59ffaf40b1be4283002", [:mix], [{:datastructures, "~> 0.2", [hex: :datastructures, optional: false]}, {:socket, "~> 0.3", [hex: :socket, optional: false]}]},
   "jazz": {:hex, :jazz, "0.2.1", "46cf8ed1bd8f02441d7870aae052c7dc0adcb722d7585c2f8824b30c4c34d100", [:mix], []},

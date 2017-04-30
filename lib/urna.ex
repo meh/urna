@@ -278,14 +278,18 @@ defmodule Urna do
   end
 
   defmacro param(name) do
-    quote do: var!(params, Urna)[unquote(name)]
+    quote do: var!(params, Urna)[to_string(unquote(name))]
   end
 
   defmacro uri do
     quote do: var!(uri, Urna)
   end
 
-  defmacro query do
+  defmacro query(name) do
+    quote do: URI.decode_query(var!(uri, Urna).query)[to_string(unquote(name))]
+  end
+
+  defmacro queries do
     quote do: URI.decode_query(var!(uri, Urna).query)
   end
 

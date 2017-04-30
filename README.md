@@ -45,7 +45,7 @@ defmodule Example do
       # is done based on the Content-Type header assumed there's an available
       # decoder for that type.
       post do
-        params["id"]
+        param("id")
       end
 
       # Other common verbs are available: head, get, post, put, delete.
@@ -89,7 +89,7 @@ defmodule Example do
     # table, so you'd want to answer to the request with a 201 (Created)
     # response, on top with the newly created row.
     post do
-      Hey.create(params) |> reply 201
+      Hey.create(params()) |> reply 201
     end
   end
 end

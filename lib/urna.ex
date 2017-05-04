@@ -278,7 +278,15 @@ defmodule Urna do
   end
 
   defmacro param(name) do
-    quote do: var!(params, Urna)[to_string(unquote(name))]
+    quote do
+      case var!(params, Urna) do
+        value when is_map(value) ->
+          value[to_string(unquote(name))]
+
+        _ ->
+          nil
+      end
+    end
   end
 
   defmacro uri do

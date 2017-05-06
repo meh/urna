@@ -294,11 +294,19 @@ defmodule Urna do
   end
 
   defmacro query(name) do
-    quote do: URI.decode_query(var!(uri, Urna).query)[to_string(unquote(name))]
+    quote do
+      if query = var!(uri, Urna).query do
+        URI.decode_query(query)[to_string(unquote(name))]
+      end
+    end
   end
 
   defmacro queries do
-    quote do: URI.decode_query(var!(uri, Urna).query)
+    quote do
+      if query = var!(uri, Urna).query do
+        URI.decode_query(var!(uri, Urna).query)
+      end
+    end
   end
 
   def reply(code) when code in 100 .. 399 do

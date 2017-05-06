@@ -3,7 +3,7 @@ defmodule Urna.Mixfile do
 
   def project do
     [ app: :urna,
-      version: "0.2.1",
+      version: "0.2.2",
       deps: deps(),
       package: package(),
       description: "REST in peace" ]

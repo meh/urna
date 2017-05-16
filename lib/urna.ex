@@ -33,6 +33,7 @@ defmodule Urna do
     quote do
       use Cauldron
       import Urna
+      use Urna.Logger
 
       @headers  unquote(opts[:headers]) || %{}
       @allow    unquote(opts[:allow]) || false
@@ -47,6 +48,7 @@ defmodule Urna do
   end
 
   use Data
+  use Urna.Logger
 
   @verbs head:   "HEAD",
          get:    "GET",
@@ -254,11 +256,22 @@ defmodule Urna do
   @doc false
   defmacro body_to_response(body) do
     quote do
+      var!(params, Urna) = nil
+
       case Urna.Backend.decode(var!(req, Urna), @adapters) do
         { :ok, var!(params, Urna) } ->
-          Urna.Backend.ok(var!(req, Urna), unquote(body), @adapters, @allow, @headers)
+          try do
+            value = unquote(body)
+            Logger.info "handled request", value: value
+            Urna.Backend.ok(var!(req, Urna), value, @adapters, @allow, @headers)
+          rescue
+            error ->
+              Logger.error Exception.format(:error, error)
+              Urna.Backend.crash(var!(req, Urna), error, @allow, @headers)
+          end
 
         { :error, _ } ->
+          Logger.error "failed request"
           Urna.Backend.error(var!(req, Urna), @allow, @headers)
       end
     end
@@ -271,7 +284,6 @@ defmodule Urna do
   defmacro header(name) do
     quote do: var!(req, Urna).headers |> Data.Dict.get(unquote(name))
   end
-
 
   defmacro params do
     quote do: var!(params, Urna)

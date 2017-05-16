@@ -16,7 +16,7 @@ defmodule Urna.Mixfile do
   end
 
   def application do
-    [ applications: [:cauldron, :poison] ]
+    [ extra_applications: [:logger] ]
   end
 
   defp deps do

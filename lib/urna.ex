@@ -262,7 +262,7 @@ defmodule Urna do
         { :ok, var!(params, Urna) } ->
           try do
             value = unquote(body)
-            Logger.info "handled request", value: value
+            Logger.info inspect(value, pretty: true, width: 0), value: value
             Urna.Backend.ok(var!(req, Urna), value, @adapters, @allow, @headers)
           rescue
             error ->
@@ -270,8 +270,8 @@ defmodule Urna do
               Urna.Backend.crash(var!(req, Urna), error, @allow, @headers)
           end
 
-        { :error, _ } ->
-          Logger.error "failed request"
+        { :error, reason } ->
+          Logger.error "could not decode request: #{inspect(reason)}"
           Urna.Backend.error(var!(req, Urna), @allow, @headers)
       end
     end

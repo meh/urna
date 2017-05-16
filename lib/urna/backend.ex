@@ -182,7 +182,7 @@ defmodule Urna.Backend do
   end
 
   def crash(req, error, allow!, headers!) do
-    req |> Request.reply(500, headers(allow!, req |> Request.headers, headers!, %{}),
+    req |> Request.reply(500, headers(allow!, req |> Request.headers, headers!, %{"Content-Type": "text/plain"}),
       if(Mix.env == :prod, do: "", else: Exception.format(:error, error)))
   end
 end
